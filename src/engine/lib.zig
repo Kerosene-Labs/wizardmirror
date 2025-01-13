@@ -1,10 +1,18 @@
 pub const log = @import("log.zig");
+pub const _error = @import("error.zig");
+pub const component = @import("component.zig");
+
+const std = @import("std");
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
-pub fn run() !void {
-    try log.info("welcome wizardmirror");
+pub const InitializationContext = struct {
+    components: std.ArrayList(component.Component),
+};
+
+pub fn run(initContext: InitializationContext) !void {
+    try log.info("welcome to wizardmirror");
 
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
         try log.info("unable to open window");
@@ -21,9 +29,10 @@ pub fn run() !void {
     );
     if (window == null) {
         try log.info("failed to create window");
-        return EngineError.SDLError;
+        return _error.EngineError.SDLError;
     }
     defer sdl.SDL_DestroyWindow(window);
+    try log.info("window created");
 
     const renderer = sdl.SDL_CreateRenderer(window, -1, 0);
     defer sdl.SDL_DestroyRenderer(renderer);
@@ -31,17 +40,16 @@ pub fn run() !void {
     var err = sdl.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     if (err != 0) {
         try log.info("failed to render draw color");
-        return EngineError.SDLError;
+        return _error.EngineError.SDLError;
     }
 
     err = sdl.SDL_RenderClear(renderer);
     if (err != 0) {
         try log.info("failed to clear renderer");
-        return EngineError.SDLError;
+        return _error.EngineError.SDLError;
     }
 
     sdl.SDL_RenderPresent(renderer);
-    try log.info("window created, awaiting events");
     var event: sdl.SDL_Event = undefined;
     while (true) {
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -50,6 +58,7 @@ pub fn run() !void {
                 return;
             }
         }
+        try component.renderComponents(initContext);
         sdl.SDL_Delay(16);
     }
 }

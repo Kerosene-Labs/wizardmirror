@@ -30,6 +30,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const components = b.createModule(.{
+        .root_source_file = b.path("src/components/lib.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    components.addImport("engine", engine);
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
@@ -39,6 +46,7 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
     exe.root_module.addImport("engine", engine);
+    exe.root_module.addImport("components", components);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

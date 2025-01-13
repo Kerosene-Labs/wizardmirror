@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub fn info(message: []const u8) !void {
     const stdout = std.io.getStdOut().writer();
-    try stdout.print("[info] {s}\n", .{message});
+    stdout.print("[info] {s}\n", .{message}) catch {}; // todo fix this catch
 }
 
 pub fn unrecoverable(message: []const u8) !void {
