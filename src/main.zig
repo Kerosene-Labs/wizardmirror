@@ -9,8 +9,6 @@ pub fn main() !void {
     // install our components
     var installableComponents = std.ArrayList(engine.component.ComponentMetadata).init(allocator);
     defer installableComponents.deinit();
-    try installableComponents.append(components.bg.component);
-    try installableComponents.append(components.welcome.component);
     try installableComponents.append(components.headlines.metadata);
 
     // pass them to our init context

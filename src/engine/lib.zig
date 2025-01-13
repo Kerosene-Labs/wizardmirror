@@ -14,7 +14,7 @@ pub var ttfFont: ?*sdl.TTF_Font = null;
 
 // represents the state of our initialization
 pub const InitializationContext = struct {
-    components: std.ArrayList(component.Component),
+    components: std.ArrayList(component.ComponentMetadata),
 };
 
 // run the engine
