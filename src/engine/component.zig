@@ -11,6 +11,7 @@ pub const Component = struct {
     initialize: ?*const fn () engine._error.EngineError!void,
 };
 
+/// Iterate over all components, initialize them
 pub fn initializeAll(initContext: engine.InitializationContext) engine._error.EngineError!void {
     for (initContext.components.items) |component| {
         if (component.initialize) |initialize| {
@@ -19,8 +20,9 @@ pub fn initializeAll(initContext: engine.InitializationContext) engine._error.En
     }
 }
 
-pub fn renderAll(initContext: engine.InitializationContext) engine._error.EngineError!void {
-    for (initContext.components.items) |component| {
+/// Iterate over all components, render them
+pub fn renderAll(init_context: engine.InitializationContext) engine._error.EngineError!void {
+    for (init_context.components.items) |component| {
         // todo implement layering here
         try component.render();
     }

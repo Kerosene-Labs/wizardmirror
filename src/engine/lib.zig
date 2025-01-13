@@ -1,11 +1,13 @@
 pub const log = @import("log.zig");
 pub const _error = @import("error.zig");
 pub const component = @import("component.zig");
-
-const std = @import("std");
 pub const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
+pub const ttf = @cImport({
+    @cInclude("SDL2/SDL_ttf.h");
+});
+const std = @import("std");
 
 pub var sdlRenderer: ?*sdl.SDL_Renderer = null;
 
@@ -39,18 +41,6 @@ pub fn run(initContext: InitializationContext) !void {
     sdlRenderer = sdl.SDL_CreateRenderer(window, -1, 0);
     defer sdl.SDL_DestroyRenderer(sdlRenderer);
 
-    var err = sdl.SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
-    if (err != 0) {
-        try log.info("failed to render draw color");
-        return _error.EngineError.SDLError;
-    }
-
-    err = sdl.SDL_RenderClear(sdlRenderer);
-    if (err != 0) {
-        try log.info("failed to clear renderer");
-        return _error.EngineError.SDLError;
-    }
-
     sdl.SDL_RenderPresent(sdlRenderer);
     var event: sdl.SDL_Event = undefined;
 
@@ -58,6 +48,7 @@ pub fn run(initContext: InitializationContext) !void {
     try component.initializeAll(initContext);
 
     // enter our main loop
+    try log.info("entering main loop");
     var frames: u64 = 0;
     var startTime: u64 = sdl.SDL_GetPerformanceCounter();
     var currentTime: u64 = 0;
@@ -88,7 +79,7 @@ pub fn run(initContext: InitializationContext) !void {
         }
 
         // clear the frame
-        err = sdl.SDL_RenderClear(sdlRenderer);
+        const err = sdl.SDL_RenderClear(sdlRenderer);
         if (err != 0) {
             return _error.EngineError.SDLError;
         }

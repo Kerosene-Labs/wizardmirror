@@ -45,6 +45,7 @@ pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{ .name = "wizardmirror", .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize, .link_libc = true });
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("SDL2_ttf");
     exe.root_module.addImport("engine", engine);
     exe.root_module.addImport("components", components);
 
