@@ -10,6 +10,7 @@ pub fn main() !void {
     var installableComponents = std.ArrayList(engine.component.Component).init(allocator);
     defer installableComponents.deinit();
     try installableComponents.append(components.welcome.component);
+    try installableComponents.append(components.headlines.component);
 
     // pass them to our init context
     const initializationContext = engine.InitializationContext{
