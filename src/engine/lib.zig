@@ -1,28 +1,44 @@
-pub const log = @import("log.zig");
+// exported modules
 pub const _error = @import("error.zig");
 pub const component = @import("component.zig");
 pub const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
-pub const ttf = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
+pub const state = @import("state.zig");
+
+// required internal modules
 const std = @import("std");
 
 pub var sdlRenderer: ?*sdl.SDL_Renderer = null;
+pub var ttfFont: ?*sdl.TTF_Font = null;
 
+// represents the state of our initialization
 pub const InitializationContext = struct {
     components: std.ArrayList(component.Component),
 };
 
+// run the engine
 pub fn run(initContext: InitializationContext) !void {
-    try log.info("welcome to wizardmirror");
+    sdl.SDL_Log("Welcome to WizardMirror");
 
-    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
-        try log.info("unable to open window");
+    // initialize sdl
+    if (sdl.SDL_Init(sdl.SDL_INIT_EVERYTHING) != 0) {
+        sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s", sdl.SDL_GetError());
     }
     defer sdl.SDL_Quit();
 
+    // initialize ttf
+    var err = sdl.TTF_Init();
+    if (err != 0) {
+        return _error.EngineError.TTFError;
+    }
+    defer sdl.TTF_Quit();
+    ttfFont = sdl.TTF_OpenFont("/usr/share/fonts/google-noto/NotoSans-Regular.ttf", 16);
+    if (ttfFont == null) {
+        sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", sdl.SDL_GetError());
+        return _error.EngineError.TTFError;
+    }
+    // create our prerequisites
     const window = sdl.SDL_CreateWindow(
         "WizardMirror",
         sdl.SDL_WINDOWPOS_CENTERED,
@@ -32,13 +48,12 @@ pub fn run(initContext: InitializationContext) !void {
         sdl.SDL_WINDOW_SHOWN,
     );
     if (window == null) {
-        try log.info("failed to create window");
+        sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to create window: %s", sdl.SDL_GetError());
         return _error.EngineError.SDLError;
     }
     defer sdl.SDL_DestroyWindow(window);
-    try log.info("window created");
 
-    sdlRenderer = sdl.SDL_CreateRenderer(window, -1, 0);
+    sdlRenderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
     defer sdl.SDL_DestroyRenderer(sdlRenderer);
 
     sdl.SDL_RenderPresent(sdlRenderer);
@@ -48,7 +63,7 @@ pub fn run(initContext: InitializationContext) !void {
     try component.initializeAll(initContext);
 
     // enter our main loop
-    try log.info("entering main loop");
+    sdl.SDL_Log("Blasting off...");
     var frames: u64 = 0;
     var startTime: u64 = sdl.SDL_GetPerformanceCounter();
     var currentTime: u64 = 0;
@@ -73,18 +88,26 @@ pub fn run(initContext: InitializationContext) !void {
         // handle events
         while (sdl.SDL_PollEvent(&event) != 0) {
             if (event.type == sdl.SDL_QUIT) {
-                try log.info("exiting. goodbye :)");
+                sdl.SDL_Log("Goodbye :)");
                 return;
             }
         }
 
-        // clear the frame
-        const err = sdl.SDL_RenderClear(sdlRenderer);
+        // clear our screen
+        err = sdl.SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
         if (err != 0) {
+            sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to set the draw color color: %s", sdl.SDL_GetError());
+            return _error.EngineError.SDLError;
+        }
+        err = sdl.SDL_RenderClear(sdlRenderer);
+        if (err != 0) {
+            sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to clear renderer: %s", sdl.SDL_GetError());
             return _error.EngineError.SDLError;
         }
 
-        // render our components
+        // render the components
         try component.renderAll(initContext);
+        sdl.SDL_RenderPresent(sdlRenderer);
+        sdl.SDL_Delay(16);
     }
 }

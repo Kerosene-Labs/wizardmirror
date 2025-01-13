@@ -15,7 +15,7 @@ pub fn render() engine._error.EngineError!void {
 }
 
 pub fn initialize() engine._error.EngineError!void {
-    try engine.log.info("initialized 'bg' component");
+    engine.sdl.SDL_Log("Initialized component 'bg'");
 }
 
 pub const component = engine.component.Component{ .layer = 1, .name = "bg", .render = render, .initialize = initialize };

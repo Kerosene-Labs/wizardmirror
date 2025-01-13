@@ -1,10 +1,9 @@
-const log = @import("log.zig");
 const engine = @import("lib.zig");
 const _error = @import("error.zig");
 const std = @import("std");
 
 /// A component to be rendered
-pub const Component = struct {
+pub const ComponentMetadata = struct {
     name: []const u8,
     layer: u8,
     render: *const fn () engine._error.EngineError!void,
