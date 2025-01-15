@@ -9,8 +9,8 @@ pub const Component = struct {
     deinit_ptr: *const fn () anyerror!void,
 };
 
-/// Install a given type to a Component
-pub fn install(comptime T: type) !Component {
+/// *loosely* "Compile" a given type to a Component. We'll try searching for init, render, and deinit functions and store a type name.
+pub fn compile(comptime T: type) !Component {
     // function pointers
     const init_ptr: ?*const fn () anyerror!void = @field(T, "init");
     const render_ptr: ?*const fn () anyerror!void = @field(T, "render");
@@ -38,7 +38,7 @@ pub fn install(comptime T: type) !Component {
 /// Iterate over all components, initialize them
 pub fn initAll(initContext: engine.InitializationContext) !void {
     for (initContext.components.items) |component| {
-        try *component.init_ptr();
+        try component.init_ptr();
     }
 }
 
@@ -46,14 +46,13 @@ pub fn initAll(initContext: engine.InitializationContext) !void {
 pub fn renderAll(init_context: engine.InitializationContext) !void {
     for (init_context.components.items) |component| {
         // todo implement layering here
-        try *component.render_ptr();
+        try component.render_ptr();
     }
 }
 
 /// Iterate over all components, render them
 pub fn deinitAll(init_context: engine.InitializationContext) !void {
     for (init_context.components.items) |component| {
-        // todo implement layering here
-        try *component.deinit_ptr();
+        try component.deinit_ptr();
     }
 }

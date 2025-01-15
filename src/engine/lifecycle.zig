@@ -6,11 +6,12 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub var sdlRenderer: ?*sdl.SDL_Renderer = null;
-pub var ttfFont: ?*sdl.TTF_Font = null;
+pub const scaling_factor: f32 = 2;
+pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
+pub var ttf_font: ?*sdl.TTF_Font = null;
 
 // run the engine
-pub fn run(_: lib.InitializationContext) !void {
+pub fn run(initContext: lib.InitializationContext) !void {
     sdl.SDL_Log("Welcome to WizardMirror");
 
     // initialize sdl
@@ -18,6 +19,7 @@ pub fn run(_: lib.InitializationContext) !void {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s", sdl.SDL_GetError());
     }
     defer sdl.SDL_Quit();
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     // initialize ttf
     var err = sdl.TTF_Init();
@@ -25,19 +27,21 @@ pub fn run(_: lib.InitializationContext) !void {
         return errors.SDLError.TTFInitFailed;
     }
     defer sdl.TTF_Quit();
-    ttfFont = sdl.TTF_OpenFont("/usr/share/fonts/google-noto/NotoSans-Regular.ttf", 16);
-    if (ttfFont == null) {
+    ttf_font = sdl.TTF_OpenFont("/usr/share/fonts/open-sans/OpenSans-Bold.ttf", @round(16 * (scaling_factor * 2)));
+    if (ttf_font == null) {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", sdl.SDL_GetError());
         return errors.SDLError.TTFInitFailed;
     }
+    sdl.TTF_SetFontHinting(ttf_font, sdl.TTF_HINTING_NORMAL);
+
     // create our prerequisites
     const window = sdl.SDL_CreateWindow(
         "WizardMirror",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
-        800,
         600,
-        sdl.SDL_WINDOW_SHOWN,
+        800,
+        sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_ALLOW_HIGHDPI,
     );
     if (window == null) {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to create window: %s", sdl.SDL_GetError());
@@ -45,14 +49,14 @@ pub fn run(_: lib.InitializationContext) !void {
     }
     defer sdl.SDL_DestroyWindow(window);
 
-    sdlRenderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
-    defer sdl.SDL_DestroyRenderer(sdlRenderer);
+    sdl_renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
+    defer sdl.SDL_DestroyRenderer(sdl_renderer);
 
-    sdl.SDL_RenderPresent(sdlRenderer);
+    sdl.SDL_RenderPresent(sdl_renderer);
     var event: sdl.SDL_Event = undefined;
 
     // initialize components
-    // try component.initializeAll(initContext);
+    try component.initAll(initContext);
 
     // enter our main loop
     sdl.SDL_Log("Blasting off...");
@@ -80,26 +84,27 @@ pub fn run(_: lib.InitializationContext) !void {
         // handle events
         while (sdl.SDL_PollEvent(&event) != 0) {
             if (event.type == sdl.SDL_QUIT) {
+                sdl.SDL_Log("Got kill signal, cleaning up");
+                try component.deinitAll(initContext);
                 sdl.SDL_Log("Goodbye :)");
                 return;
             }
         }
 
         // clear our screen
-        err = sdl.SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
+        err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
         if (err != 0) {
             sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to set the draw color color: %s", sdl.SDL_GetError());
             return errors.SDLError.SetRenderDrawColorFailed;
         }
-        err = sdl.SDL_RenderClear(sdlRenderer);
+        err = sdl.SDL_RenderClear(sdl_renderer);
         if (err != 0) {
             sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to clear renderer: %s", sdl.SDL_GetError());
             return errors.SDLError.RenderClearFailed;
         }
 
         // render the components
-        // try component.renderAll(initContext);
-        sdl.SDL_RenderPresent(sdlRenderer);
-        sdl.SDL_Delay(16);
+        try component.renderAll(initContext);
+        sdl.SDL_RenderPresent(sdl_renderer);
     }
 }
