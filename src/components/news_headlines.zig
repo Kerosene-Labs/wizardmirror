@@ -22,6 +22,8 @@ pub fn do_carousel(_: u32, _: ?*anyopaque) callconv(.C) u32 {
 }
 
 pub const MainHeadline = struct {
+    pub const children: []const u8 = "Test";
+
     pub fn init() !void {
         const sdlTimer = engine.sdl.SDL_AddTimer(1000, do_carousel, null);
         if (sdlTimer == 0) {
