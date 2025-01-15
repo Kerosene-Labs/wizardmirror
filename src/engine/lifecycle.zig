@@ -10,7 +10,7 @@ pub var sdlRenderer: ?*sdl.SDL_Renderer = null;
 pub var ttfFont: ?*sdl.TTF_Font = null;
 
 // run the engine
-pub fn run(initContext: lib.InitializationContext) !void {
+pub fn run(_: lib.InitializationContext) !void {
     sdl.SDL_Log("Welcome to WizardMirror");
 
     // initialize sdl
@@ -52,7 +52,7 @@ pub fn run(initContext: lib.InitializationContext) !void {
     var event: sdl.SDL_Event = undefined;
 
     // initialize components
-    try component.initializeAll(initContext);
+    // try component.initializeAll(initContext);
 
     // enter our main loop
     sdl.SDL_Log("Blasting off...");
@@ -98,7 +98,7 @@ pub fn run(initContext: lib.InitializationContext) !void {
         }
 
         // render the components
-        try component.renderAll(initContext);
+        // try component.renderAll(initContext);
         sdl.SDL_RenderPresent(sdlRenderer);
         sdl.SDL_Delay(16);
     }

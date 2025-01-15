@@ -11,7 +11,7 @@ var contentStore: ?engine.state.StringStore = null;
 // dependents
 var surface: [*c]engine.sdl.SDL_Surface = null;
 
-pub const metadata = engine.component.ComponentMetadata{ .layer = 1, .name = "headlines", .render = render, .initialize = initialize };
+pub const metadata = engine.component.BaseComponent{ .layer = 1, .name = "headlines", .render = render, .init = init, .deinit = null };
 
 // callback for when the content store's value is changed
 pub fn contentChanged() !void {
@@ -19,7 +19,7 @@ pub fn contentChanged() !void {
 }
 
 // initialize our function. call our subscribers.
-pub fn initialize() !void {
+pub fn init() !void {
     contentStore = try engine.state.StringStore.init("Distressing Survey Finds Most U.S. Citizens Unable To Name All 340 Million Americans"[0..]);
     try contentStore.?.subscribe(contentChanged);
     engine.sdl.SDL_Log("Initialized headlines component");
