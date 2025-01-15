@@ -15,5 +15,5 @@ pub fn main() !void {
     const initializationContext = engine.InitializationContext{
         .components = installableComponents,
     };
-    try engine.run(initializationContext);
+    try engine.lifecycle.run(initializationContext);
 }

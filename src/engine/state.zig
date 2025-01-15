@@ -1,5 +1,5 @@
 const std = @import("std");
-const _error = @import("error.zig");
+const errors = @import("errors.zig");
 const allocator = std.heap.page_allocator;
 
 // pre-mades
@@ -12,24 +12,21 @@ pub const U32Store = Store(u32);
 pub fn Store(comptime T: type) type {
     return struct {
         value: T,
-        subscriptions: std.ArrayList(*const fn () _error.EngineError!void),
+        subscriptions: std.ArrayList(*const fn () anyerror!void),
 
         // Initialize a new store with a `val` of `T`, and an initial subscriber. This initial subscriber will be called after creation.
-        pub fn init(val: T, initialSubscriber: *const fn () _error.EngineError!void) _error.EngineError!@This() {
-            var subscribers = std.ArrayList(*const fn () _error.EngineError!void).init(allocator);
-            subscribers.append(initialSubscriber) catch {
-                return _error.EngineError.StateError;
-            };
+        // Due to language
+        pub fn init(val: T) !@This() {
             var new = @This(){
                 .value = val,
-                .subscriptions = subscribers,
+                .subscriptions = std.ArrayList(*const fn () anyerror!void).init(allocator),
             };
             try new.callSubscribers();
             return new;
         }
 
         // Call all the subscribers
-        fn callSubscribers(self: *@This()) _error.EngineError!void {
+        pub fn callSubscribers(self: *@This()) !void {
             for (self.subscriptions.items) |subscriber| {
                 try subscriber();
             }
@@ -41,11 +38,10 @@ pub fn Store(comptime T: type) type {
             try callSubscribers(self);
         }
 
-        // Get a callback when this store's value changes.
-        pub fn subscribe(self: *@This(), callback: *const fn () _error.EngineError!void) _error.EngineError!void {
-            self.subscriptions.append(callback) catch {
-                return _error.EngineError.StateError;
-            };
+        // Get a callback when this store's value changes. Calls the callback immediately.
+        pub fn subscribe(self: *@This(), callback: *const fn () anyerror!void) anyerror!void {
+            try callback();
+            try self.subscriptions.append(callback);
         }
     };
 }
