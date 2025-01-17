@@ -1,28 +1,37 @@
 const engine = @import("engine");
 const std = @import("std");
 
-// constants
-const color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+pub const Subline = struct {
+    children: []const engine.component.Component = &.{},
 
-// stores
-var content: ?engine.state.StringStore = null;
+    pub fn init() !void {
+        engine.sdl.SDL_Log("Subline component initialized!");
+    }
 
-// dependents
-var surface: [*c]engine.sdl.SDL_Surface = null;
+    pub fn render() !void {}
 
-fn contentChanged() !void {
-    surface = engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, content.?.value.ptr, color);
-}
-
-pub fn do_carousel(_: u32, _: ?*anyopaque) callconv(.C) u32 {
-    content.?.update("Distressing Survey Finds Most U.S. Citizens Unable To Name All 340 Million Americans"[0..]) catch {
-        return 1;
-    };
-    return 0;
-}
+    pub fn deinit() !void {
+        engine.sdl.SDL_Log("Subline component de-initialized!");
+    }
+};
 
 pub const MainHeadline = struct {
-    pub const children: []const u8 = "Test";
+    children: []const engine.component.Component = &.{engine.component.compile(Subline{})},
+
+    const color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+    var content: ?engine.state.StringStore = null;
+    var surface: [*c]engine.sdl.SDL_Surface = null;
+
+    fn content_changed() !void {
+        surface = engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, content.?.value.ptr, color);
+    }
+
+    pub fn do_carousel(_: u32, _: ?*anyopaque) callconv(.C) u32 {
+        content.?.update("Distressing Survey Finds Most U.S. Citizens Unable To Name All 340 Million Americans"[0..]) catch {
+            return 1;
+        };
+        return 0;
+    }
 
     pub fn init() !void {
         const sdlTimer = engine.sdl.SDL_AddTimer(1000, do_carousel, null);
@@ -30,7 +39,7 @@ pub const MainHeadline = struct {
             return engine.errors.SDLError.CreateTimerError;
         }
         content = try engine.state.StringStore.init("..."[0..]);
-        try content.?.subscribe(contentChanged);
+        try content.?.subscribe(content_changed);
         engine.sdl.SDL_Log("MainHeadling component initialized!");
     }
 

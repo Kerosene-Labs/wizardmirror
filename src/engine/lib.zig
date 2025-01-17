@@ -12,5 +12,5 @@ const std = @import("std");
 
 // represents the state of our initialization
 pub const InitializationContext = struct {
-    components: std.ArrayList(component.Component),
+    components: []const component.Component,
 };
