@@ -42,7 +42,10 @@ pub const MainHeadline = struct {
         engine.sdl.SDL_Log("MainHeadling component initialized!");
     }
 
-    pub fn render(_: engine.sdl.SDL_Rect) !void {}
+    pub fn render(bounds: engine.sdl.SDL_Rect) !void {
+        const hello_world = engine.widget.text.TextLine("Hello, World!");
+        try hello_world.render(bounds);
+    }
 
     pub fn deinit() !void {
         engine.sdl.SDL_Log("MainHeadline component de-initialized!");

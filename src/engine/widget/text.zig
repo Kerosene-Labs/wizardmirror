@@ -1,17 +1,27 @@
-const engine = @import("engine");
+const component = @import("../component.zig");
+const engine = @import("../lib.zig");
 const std = @import("std");
 
-// var surfaces = std.HashMap([]const u8, engine.sdl.SDL_Surface).init(std.heap.page_allocator);
+var surfaces = std.StringHashMap(engine.sdl.SDL_Surface).init(std.heap.page_allocator);
 
 /// Pre-made text rendering component. Caches SDL_Surface's based on text input.
-pub fn Text(text: []u8) type {
+pub fn TextLine(text: []const u8) type {
     return struct {
-        children: []const engine.component.Component = &.{},
+        children: []const component.Component = &.{},
 
         pub fn init() !void {}
 
         pub fn render(_: engine.sdl.SDL_Rect) !void {
-            const surface = engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, content.?.value.heading.ptr, color);
+            const color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+
+            // try getting our surface
+            var surface = surfaces.get(text);
+            if (surface == null) {
+                surface = *engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, text.ptr, color);
+                surfaces.put(text, surface);
+            }
+
+            // create our texture
             const textTexture = engine.sdl.SDL_CreateTextureFromSurface(engine.lifecycle.sdl_renderer, surface);
             if (textTexture == null) {
                 engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());

@@ -2,6 +2,8 @@ const engine = @import("lib.zig");
 const errors = @import("errors.zig");
 const std = @import("std");
 
+pub const debug_rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 };
+
 /// A wrapper on top of the actual components. Contains handy pointers to our lifecycle objects.
 pub const Component = struct {
     name: [:0]const u8,
@@ -68,8 +70,7 @@ pub fn initAll(initContext: engine.InitializationContext) !void {
 
 fn render_recursively(to_render: engine.component.Component) !void {
     // TODO: remove
-    const rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 };
-    try to_render.render_ptr(rect);
+    try to_render.render_ptr(debug_rect);
     for (to_render.children) |child| {
         try render_recursively(child);
     }
