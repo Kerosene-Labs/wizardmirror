@@ -26,13 +26,13 @@ pub const TextLine = struct {
         };
     }
 
-    pub fn init(self: @This()) !void {
+    pub fn init() !void {
         if (self.color == null) {
             self.color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
         }
     }
 
-    pub fn render(self: @This(), _: engine.sdl.SDL_Rect) !void {
+    pub fn render(_: engine.sdl.SDL_Rect) !void {
         // try getting our surface
         var surface = surfaces.get(self.text);
         if (surface == null) {
@@ -57,7 +57,7 @@ pub const TextLine = struct {
         }
     }
 
-    pub fn deinit(_: @This()) !void {}
+    pub fn deinit() !void {}
 };
 
 // pub fn TextLine(text: []const u8, x: i32, y: i32, color: ?engine.sdl.SDL_Color) type;

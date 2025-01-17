@@ -11,6 +11,7 @@ pub const Component = struct {
     init_ptr: *const fn () anyerror!void,
     render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void,
     deinit_ptr: *const fn () anyerror!void,
+    source: *anyopaque,
 };
 
 /// Compile a given type to a `Component`. Performs comptime analysis reflection to store pointers to all lifecycle objects.
@@ -32,17 +33,17 @@ pub fn compile(comptime component_instance: anytype) Component {
     if (!@hasDecl(component_type, "init")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `init` method does not exist.", .{component_name}));
     }
-    const init_ptr: *const fn (self: anytype) anyerror!void = @field(component_type, "init");
+    const init_ptr: *const fn (self: *anyopaque) anyerror!void = @field(component_type, "init");
 
     if (!@hasDecl(component_type, "render")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `render` method does not exist.", .{component_name}));
     }
-    const render_ptr: *const fn (self: anytype, engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
+    const render_ptr: *const fn (self: *anyopaque, engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
 
     if (!@hasDecl(component_type, "deinit")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `deinit` method does not exist.", .{component_name}));
     }
-    const deinit_ptr: *const fn (self: anytype) anyerror!void = @field(component_type, "deinit");
+    const deinit_ptr: *const fn (self: *anyopaque) anyerror!void = @field(component_type, "deinit");
 
     return Component{
         .name = component_name,
@@ -50,6 +51,7 @@ pub fn compile(comptime component_instance: anytype) Component {
         .init_ptr = init_ptr,
         .render_ptr = render_ptr,
         .deinit_ptr = deinit_ptr,
+        .source = component_instance,
     };
 }
 
