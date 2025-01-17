@@ -50,24 +50,46 @@ pub fn compile(comptime component_instance: anytype) Component {
     };
 }
 
+/// Initialize a Component and its children
+fn init_recursively(to_initialize: engine.component.Component) !void {
+    try to_initialize.init_ptr();
+    for (to_initialize.children) |child| {
+        try init_recursively(child);
+    }
+}
+
 /// Iterate over all components, initialize them
 pub fn initAll(initContext: engine.InitializationContext) !void {
     for (initContext.components) |component| {
-        try component.init_ptr();
+        try init_recursively(component);
+    }
+}
+
+fn render_recursively(to_render: engine.component.Component) !void {
+    try to_render.render_ptr();
+    for (to_render.children) |child| {
+        try render_recursively(child);
     }
 }
 
 /// Iterate over all components, render them
 pub fn renderAll(init_context: engine.InitializationContext) !void {
     for (init_context.components) |component| {
-        // todo implement layering here
-        try component.render_ptr();
+        try render_recursively(component);
+    }
+}
+
+/// Initialize a Component and its children
+fn deinit_recursively(to_deinitialize: engine.component.Component) !void {
+    try to_deinitialize.deinit_ptr();
+    for (to_deinitialize.children) |child| {
+        try deinit_recursively(child);
     }
 }
 
 /// Iterate over all components, render them
 pub fn deinitAll(init_context: engine.InitializationContext) !void {
     for (init_context.components) |component| {
-        try component.deinit_ptr();
+        try deinit_recursively(component);
     }
 }
