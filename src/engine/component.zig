@@ -7,7 +7,7 @@ pub const Component = struct {
     name: [:0]const u8,
     children: []const Component,
     init_ptr: *const fn () anyerror!void,
-    render_ptr: *const fn () anyerror!void,
+    render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void,
     deinit_ptr: *const fn () anyerror!void,
 };
 
@@ -17,8 +17,9 @@ pub fn compile(comptime component_instance: anytype) Component {
     const component_name = @typeName(component_type);
 
     if (component_type == type) {
-        @compileError("Failed to compile a component. You've passed in a type, while we expect an instance of your type. (hint: append a {} to the end of your component type to make it an instance");
+        @compileError("Failed to compile a component, you've passed in a type and we're expecting an instance of the type. (hint: append a `{}` to the end of your type to make it an instance)");
     }
+
     // children
     if (!@hasField(component_type, "children")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `children` slice does not exist.", .{component_name}));
@@ -34,7 +35,7 @@ pub fn compile(comptime component_instance: anytype) Component {
     if (!@hasDecl(component_type, "render")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `render` method does not exist.", .{component_name}));
     }
-    const render_ptr: *const fn () anyerror!void = @field(component_type, "render");
+    const render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
 
     if (!@hasDecl(component_type, "deinit")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `deinit` method does not exist.", .{component_name}));
@@ -66,7 +67,9 @@ pub fn initAll(initContext: engine.InitializationContext) !void {
 }
 
 fn render_recursively(to_render: engine.component.Component) !void {
-    try to_render.render_ptr();
+    // TODO: remove
+    const rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 };
+    try to_render.render_ptr(rect);
     for (to_render.children) |child| {
         try render_recursively(child);
     }
