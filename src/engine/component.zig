@@ -8,9 +8,9 @@ pub const debug_rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 
 pub const Component = struct {
     name: [:0]const u8,
     children: []const Component,
-    init_ptr: *const fn () anyerror!void,
-    render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void,
-    deinit_ptr: *const fn () anyerror!void,
+    init_ptr: *const fn (self: anytype) anyerror!void,
+    render_ptr: *const fn (self: anytype, engine.sdl.SDL_Rect) anyerror!void,
+    deinit_ptr: *const fn (self: anytype) anyerror!void,
 };
 
 /// Compile a given type to a `Component`. Performs comptime analysis reflection to store pointers to all lifecycle objects.
@@ -32,17 +32,17 @@ pub fn compile(comptime component_instance: anytype) Component {
     if (!@hasDecl(component_type, "init")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `init` method does not exist.", .{component_name}));
     }
-    const init_ptr: *const fn () anyerror!void = @field(component_type, "init");
+    const init_ptr: *const fn (self: anytype) anyerror!void = @field(component_type, "init");
 
     if (!@hasDecl(component_type, "render")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `render` method does not exist.", .{component_name}));
     }
-    const render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
+    const render_ptr: *const fn (self: anytype, engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
 
     if (!@hasDecl(component_type, "deinit")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `deinit` method does not exist.", .{component_name}));
     }
-    const deinit_ptr: *const fn () anyerror!void = @field(component_type, "deinit");
+    const deinit_ptr: *const fn (self: anytype) anyerror!void = @field(component_type, "deinit");
 
     return Component{
         .name = component_name,
