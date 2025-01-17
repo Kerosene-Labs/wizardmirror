@@ -8,9 +8,9 @@ pub const debug_rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 
 pub const Component = struct {
     name: [:0]const u8,
     children: []const Component,
-    init_ptr: *const fn (self: anytype) anyerror!void,
-    render_ptr: *const fn (self: anytype, engine.sdl.SDL_Rect) anyerror!void,
-    deinit_ptr: *const fn (self: anytype) anyerror!void,
+    init_ptr: *const fn () anyerror!void,
+    render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void,
+    deinit_ptr: *const fn () anyerror!void,
 };
 
 /// Compile a given type to a `Component`. Performs comptime analysis reflection to store pointers to all lifecycle objects.
