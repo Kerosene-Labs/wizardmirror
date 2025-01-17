@@ -8,6 +8,7 @@ const Headline = struct {
 const HeadlineStore = engine.state.Store(Headline);
 var content: ?HeadlineStore = null;
 
+const x = engine.widget.text.TextLine("Hello, World!", 0, 0);
 pub const Subline = struct {
     children: []const engine.component.Component = &.{},
 
@@ -24,8 +25,7 @@ pub const Subline = struct {
 
 pub const MainHeadline = struct {
     children: []const engine.component.Component = &.{
-        engine.component.compile(engine.widget.text.TextLine.make_widget("Hello, World!", 0, 0, null)),
-        engine.component.compile(engine.widget.text.TextLine.make_widget("Hello, World!", 0, 50, null)),
+        engine.component.compile(x{}),
     },
 
     const color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };

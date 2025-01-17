@@ -7,7 +7,7 @@ pub const debug_rect = engine.sdl.SDL_Rect{ .x = 0, .y = 0, .w = 1200, .h = 200 
 /// A wrapper on top of the actual components. Contains handy pointers to our lifecycle objects.
 pub const Component = struct {
     name: [:0]const u8,
-    children: []const Component,
+    children: ?[]const Component,
     init_ptr: *const fn () anyerror!void,
     render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void,
     deinit_ptr: *const fn () anyerror!void,
@@ -24,26 +24,26 @@ pub fn compile(comptime component_instance: anytype) Component {
     }
 
     // children
-    if (!@hasField(component_type, "children")) {
-        @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `children` slice does not exist.", .{component_name}));
+    var children: ?[]const Component = null;
+    if (@hasField(component_type, "children")) {
+        children = @field(component_instance, "children");
     }
-    const children: []const Component = @field(component_instance, "children");
 
     // function pointers
     if (!@hasDecl(component_type, "init")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `init` method does not exist.", .{component_name}));
     }
-    const init_ptr: *const fn (self: *anyopaque) anyerror!void = @field(component_type, "init");
+    const init_ptr: *const fn () anyerror!void = @field(component_type, "init");
 
     if (!@hasDecl(component_type, "render")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `render` method does not exist.", .{component_name}));
     }
-    const render_ptr: *const fn (self: *anyopaque, engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
+    const render_ptr: *const fn (engine.sdl.SDL_Rect) anyerror!void = @field(component_type, "render");
 
     if (!@hasDecl(component_type, "deinit")) {
         @compileError(std.fmt.comptimePrint("Failed to compile the '{s}' component as the `deinit` method does not exist.", .{component_name}));
     }
-    const deinit_ptr: *const fn (self: *anyopaque) anyerror!void = @field(component_type, "deinit");
+    const deinit_ptr: *const fn () anyerror!void = @field(component_type, "deinit");
 
     return Component{
         .name = component_name,
@@ -51,15 +51,17 @@ pub fn compile(comptime component_instance: anytype) Component {
         .init_ptr = init_ptr,
         .render_ptr = render_ptr,
         .deinit_ptr = deinit_ptr,
-        .source = component_instance,
+        .source = @ptrCast(@constCast(&component_instance)),
     };
 }
 
 /// Initialize a Component and its children
 fn init_recursively(to_initialize: engine.component.Component) !void {
     try to_initialize.init_ptr();
-    for (to_initialize.children) |child| {
-        try init_recursively(child);
+    if (to_initialize.children != null) {
+        for (to_initialize.children) |child| {
+            try init_recursively(child);
+        }
     }
 }
 
@@ -71,10 +73,11 @@ pub fn initAll(initContext: engine.InitializationContext) !void {
 }
 
 fn render_recursively(to_render: engine.component.Component) !void {
-    // TODO: remove
     try to_render.render_ptr(debug_rect);
-    for (to_render.children) |child| {
-        try render_recursively(child);
+    if (to_render.children != null) {
+        for (to_render.children) |child| {
+            try render_recursively(child);
+        }
     }
 }
 
