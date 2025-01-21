@@ -10,24 +10,6 @@ pub const Component = struct {
     deinit_ptr: *const fn () anyerror!void,
 };
 
-pub fn compileAll(comptime components: anytype) []Component {
-    var total_compiled: [0]Component = .{};
-    for (components) |component| {
-        // Store the newly compiled component in a 1-element array on the stack...
-        var single_array = [1]Component{compile(component)};
-        // ...then take that as a slice
-        const single_slice = single_array[0..];
-
-        // Now we can concatenate two `[]Component` slices
-        total_compiled = std.mem.concat(
-            std.heap.page_allocator,
-            Component,
-            &[_][]const Component{ total_compiled, single_slice },
-        ) catch unreachable;
-    }
-    return total_compiled;
-}
-
 /// Compile a given type to a `Component`. Performs comptime analysis reflection to store pointers to all lifecycle objects.
 pub fn compile(comptime component: anytype) Component {
     comptime {
@@ -42,13 +24,10 @@ pub fn compile(comptime component: anytype) Component {
                 for (struct_info.decls) |decl| {
                     if (std.mem.eql(u8, decl.name, "init")) {
                         init_ptr = component.init;
-                        @compileLog("has init");
                     } else if (std.mem.eql(u8, decl.name, "render")) {
                         render_ptr = component.render;
-                        @compileLog("has render");
                     } else if (std.mem.eql(u8, decl.name, "deinit")) {
                         deinit_ptr = component.deinit;
-                        @compileLog("has deinit");
                     }
                 }
             },
@@ -82,13 +61,13 @@ fn init_recursively(to_initialize: engine.component.Component) !void {
 }
 
 /// Iterate over all components, initialize them
-pub fn initAll(components: []Component) !void {
-    for (components.components) |component| {
+pub fn initAll(components: []const Component) !void {
+    for (components) |component| {
         try init_recursively(component);
     }
 }
 
-fn render_recursively(to_render: engine.component.Component) !void {
+fn render_recursively(to_render: Component) !void {
     try to_render.render_ptr();
     // if (to_render.children != null) {
     //     for (to_render.children.?.items) |child| {
@@ -98,15 +77,15 @@ fn render_recursively(to_render: engine.component.Component) !void {
 }
 
 /// Iterate over all components, render them
-pub fn renderAll(components: []Component) !void {
-    for (components.components) |component| {
+pub fn renderAll(components: []const Component) !void {
+    for (components) |component| {
         try render_recursively(component);
     }
 }
 
 /// Initialize a Component and its children
-fn deinit_recursively(components: []Component) !void {
-    try components.deinit_ptr();
+fn deinit_recursively(component: Component) !void {
+    try component.deinit_ptr();
     // if (to_deinitialize.children != null) {
     //     for (to_deinitialize.children.?.items) |child| {
     //         try deinit_recursively(child);
@@ -115,8 +94,8 @@ fn deinit_recursively(components: []Component) !void {
 }
 
 /// Iterate over all components, render them
-pub fn deinitAll(init_context: engine.InitializationContext) !void {
-    for (init_context.components) |component| {
+pub fn deinitAll(components: []const Component) !void {
+    for (components) |component| {
         try deinit_recursively(component);
     }
 }

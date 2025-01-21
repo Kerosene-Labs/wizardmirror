@@ -11,7 +11,7 @@ pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
 pub var ttf_font: ?*sdl.TTF_Font = null;
 
 // run the engine
-pub fn run(components: []component.Component) !void {
+pub fn run(components: []const component.Component) !void {
     sdl.SDL_Log("Welcome to WizardMirror");
 
     // initialize sdl
@@ -56,7 +56,7 @@ pub fn run(components: []component.Component) !void {
     var event: sdl.SDL_Event = undefined;
 
     // initialize components
-    try component.initAll(component.initAll(components));
+    try component.initAll(components);
 
     // enter our main loop
     sdl.SDL_Log("Blasting off...");
