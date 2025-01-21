@@ -13,5 +13,5 @@ const std = @import("std");
 
 // represents the state of our initialization
 pub const InitializationContext = struct {
-    components: []const component.Component,
+    components: []const type,
 };
