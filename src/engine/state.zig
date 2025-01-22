@@ -16,13 +16,11 @@ pub fn Store(comptime T: type) type {
 
         // Initialize a new store with a `val` of `T`, and an initial subscriber. This initial subscriber will be called after creation.
         // Due to language
-        pub fn init(val: T) !@This() {
-            var new = @This(){
+        pub fn init(val: T) @This() {
+            return @This(){
                 .value = val,
                 .subscriptions = std.ArrayList(*const fn () anyerror!void).init(allocator),
             };
-            try new.callSubscribers();
-            return new;
         }
 
         // Call all the subscribers

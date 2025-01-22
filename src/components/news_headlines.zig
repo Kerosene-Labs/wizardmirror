@@ -1,22 +1,31 @@
 const engine = @import("engine");
 const std = @import("std");
 
-const Headline = struct {
-    heading: []const u8,
-    subheading: []const u8,
-};
-const HeadlineStore = engine.state.Store(Headline);
-var content: ?HeadlineStore = null;
+var carousel_timer: ?engine.sdl.SDL_TimerID = null;
+var content = engine.state.StringStore.init("...");
+const text = engine.widget.text.TextLine(&content, 0, 0);
 
-pub const MainHeadline = struct {
-    pub fn init() !void {
-        // children = std.ArrayList(engine.component.Component).init(std.heap.page_allocator);
-        engine.sdl.SDL_Log("MainHeadling component initialized!");
+// Internal functions
+fn doCarousel() !void {
+    try content.update("Pulling content");
+    while (true) {
+        std.time.sleep(1 * std.time.ns_per_s);
+        try content.update("Test");
     }
+}
 
-    pub fn render() !void {}
+// Lifecycle functions
+pub fn init() !void {
+    // setup our text
+    try text.init();
+    try content.callSubscribers();
 
-    pub fn deinit() !void {
-        engine.sdl.SDL_Log("MainHeadline component de-initialized!");
-    }
-};
+    // start our initial carousel timer
+    _ = try std.Thread.spawn(.{}, doCarousel, .{});
+}
+
+pub fn render() !void {
+    try text.render();
+}
+
+pub fn deinit() !void {}

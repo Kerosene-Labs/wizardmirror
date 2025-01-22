@@ -11,9 +11,7 @@ pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
 pub var ttf_font: ?*sdl.TTF_Font = null;
 
 // run the engine
-pub fn run(components: []const component.Component) !void {
-    sdl.SDL_Log("Welcome to WizardMirror");
-
+pub fn run() !void {
     // initialize sdl
     if (sdl.SDL_Init(sdl.SDL_INIT_EVERYTHING) != 0) {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s", sdl.SDL_GetError());
@@ -56,7 +54,7 @@ pub fn run(components: []const component.Component) !void {
     var event: sdl.SDL_Event = undefined;
 
     // initialize components
-    try component.initAll(components);
+    try component.initAll();
 
     // enter our main loop
     sdl.SDL_Log("Blasting off...");
@@ -85,7 +83,7 @@ pub fn run(components: []const component.Component) !void {
         while (sdl.SDL_PollEvent(&event) != 0) {
             if (event.type == sdl.SDL_QUIT) {
                 sdl.SDL_Log("Got kill signal, cleaning up");
-                try component.deinitAll(components);
+                try component.deinitAll();
                 sdl.SDL_Log("Goodbye :)");
                 return;
             }
@@ -104,7 +102,7 @@ pub fn run(components: []const component.Component) !void {
         }
 
         // render the components
-        try component.renderAll(components);
+        try component.renderAll();
         sdl.SDL_RenderPresent(sdl_renderer);
     }
 }
