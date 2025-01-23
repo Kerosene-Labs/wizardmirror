@@ -1,5 +1,6 @@
 const engine = @import("engine");
 const std = @import("std");
+const service = @import("service");
 
 var carousel_timer: ?engine.sdl.SDL_TimerID = null;
 var content = engine.state.StringStore.init("...");
@@ -22,6 +23,9 @@ pub fn init() !void {
 
     // start our initial carousel timer
     _ = try std.Thread.spawn(.{}, doCarousel, .{});
+
+    // get our rss feeds
+    try engine.http.get("https://api.weather.gov");
 }
 
 pub fn render() !void {

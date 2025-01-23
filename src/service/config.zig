@@ -3,7 +3,7 @@ const engine = @import("engine");
 
 const ConfigError = error{ ReadFailed, HomeEnvVarNotSet };
 
-pub const Config = struct { rss_feeds: []const u8 };
+const Config = struct { rss_feeds: [][]const u8 };
 var config: ?Config = null;
 
 // Get our home directory
@@ -16,19 +16,27 @@ fn getHome() ![]const u8 {
     }
 }
 
+pub fn get() *Config {
+    if (config == null) {
+        @panic("Programming error, Config is not set");
+    }
+    return &Config.?;
+}
+
 pub fn write() !void {}
 
 pub fn init() !void {
-    // open our file
-    const home = try getHome();
-    const config_path = try std.fmt.allocPrint(std.heap.page_allocator, "{s}/.config/wizardmirror/config.json", .{home});
-    const config_file = try std.fs.openFileAbsolute(config_path, .{ .mode = std.fs.File.OpenMode.read_only });
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    // read the file
-    const buff = &[_]u8{};
-    _ = try config_file.readAll(buff);
+    // get our path, open the file
+    const home = try getHome();
+    const config_path = try std.fmt.allocPrint(allocator, "{s}/.config/wizardmirror/config.json", .{home});
+    const config_file = try std.fs.openFileAbsolute(config_path, .{ .mode = std.fs.File.OpenMode.read_only });
+    const buffer = try config_file.readToEndAlloc(allocator, std.math.maxInt(usize));
 
     // parse it
-    config = (try std.json.parseFromSlice(Config, std.heap.page_allocator, buff, .{})).value;
+    config = (try std.json.parseFromSlice(Config, allocator, buffer, .{})).value;
     engine.sdl.SDL_Log("Initialized config from disk");
 }
