@@ -1,0 +1,27 @@
+{
+	"name": "Ubuntu",
+	"build": {
+		"context": ".",
+		"dockerfile": "Dockerfilev"
+	},
+	"mounts": [
+		{
+			"source": "/run/user/1000/wayland-0",
+			"target": "/tmp/wayland-0",
+			"type": "bind"
+		}
+	],
+	"features": {
+		"ghcr.io/devcontainers-extra/features/zig": {"version": "0.13.0"}
+	},
+	"remoteEnv": {
+		"WAYLAND_DISPLAY": "/tmp/wayland-0"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ziglang.vscode-zig"
+			]
+		}
+	}
+}

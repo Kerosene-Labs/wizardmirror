@@ -12,6 +12,7 @@ fn doCarousel() !void {
     while (true) {
         std.time.sleep(1 * std.time.ns_per_s);
         try content.update("Test");
+        try engine.http.get("https://api.weather.gov");
     }
 }
 
@@ -25,7 +26,6 @@ pub fn init() !void {
     _ = try std.Thread.spawn(.{}, doCarousel, .{});
 
     // get our rss feeds
-    try engine.http.get("https://api.weather.gov");
 }
 
 pub fn render() !void {

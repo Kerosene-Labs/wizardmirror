@@ -7,13 +7,17 @@ const errors = @import("errors.zig");
 const BufferContext = struct {
     initial: ?*u8 = null,
     total_size: ?usize = null,
-    allocator: *std.mem.Allocator,
+    allocator: *std.mem.Allocator = std.heap.ArenaAllocator.init(),
 
-    pub fn copy(self: @This()) []const u8 {
+    pub fn copy(self: @This()) ![]const u8 {
         const curl_buffer: [*]const u8 = @ptrCast(self.initial.?);
-        const destination = try self.allocator.alloc(u8, self.total_size - 1);
-        std.mem.copy(u8, destination, curl_buffer);
+        const destination = try self.allocator.alloc(u8, self.total_size.? - 1);
+        std.mem.copyForwards(u8, destination, curl_buffer[0 .. self.total_size.? - 1]);
         return destination;
+    }
+
+    pub fn deinit(self: @This()) !void {
+        self.allocator.free(memory: anytype)
     }
 };
 
@@ -21,7 +25,7 @@ fn writeCallback(ptr: ?*anyopaque, size: usize, nmemb: usize, userdata: ?*Buffer
     if (ptr == null or userdata == null) return 0;
     userdata.?.total_size = size * nmemb;
     userdata.?.initial = @ptrCast(ptr.?);
-    return userdata.?.total_size;
+    return userdata.?.total_size.?;
 }
 
 fn getHandle(url: []const u8, context: *BufferContext) ?*curl.CURL {
@@ -38,7 +42,7 @@ fn getHandle(url: []const u8, context: *BufferContext) ?*curl.CURL {
 }
 
 pub fn get(url: []const u8) !void {
-    var response = BufferContext{ .allocator = &std.heap.page_allocator };
+    var response = BufferContext{ .allocator = @constCast(&std.heap.page_allocator) };
     const handle = getHandle(url, &response);
     if (handle == null) {
         return errors.EngineError.CurlError;
@@ -49,4 +53,6 @@ pub fn get(url: []const u8) !void {
     if (result != curl.CURLE_OK) {
         return errors.EngineError.HttpError;
     }
+
+    std.debug.print("{s}", .{try response.copy()});
 }
