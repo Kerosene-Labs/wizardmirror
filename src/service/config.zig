@@ -3,6 +3,9 @@ const engine = @import("engine");
 
 const ConfigError = error{ ReadFailed, HomeEnvVarNotSet };
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+
 const Config = struct { rss_feeds: [][]const u8 };
 var config: ?Config = null;
 
@@ -16,20 +19,16 @@ fn getHome() ![]const u8 {
     }
 }
 
-pub fn get() *Config {
+pub fn get() Config {
     if (config == null) {
         @panic("Programming error, Config is not set");
     }
-    return &Config.?;
+    return config.?;
 }
 
 pub fn write() !void {}
 
 pub fn init() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
     // get our path, open the file
     const home = try getHome();
     const config_path = try std.fmt.allocPrint(allocator, "{s}/.config/wizardmirror/config.json", .{home});

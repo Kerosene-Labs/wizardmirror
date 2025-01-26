@@ -6,14 +6,23 @@ var carousel_timer: ?engine.sdl.SDL_TimerID = null;
 var content = engine.state.StringStore.init("...");
 const text = engine.widget.text.TextLine(&content, 0, 0);
 
+const allocator = std.heap.page_allocator;
+
 // Internal functions
 fn doCarousel() !void {
-    try content.update("Pulling content");
+    try content.update("...");
+
+    var feed_content = std.ArrayList([]const u8).init(allocator);
+    for (service.config.get().rss_feeds) |feed| {
+        const c_url: [*c]u8 = @ptrCast(try allocator.dupeZ(u8, feed));
+        std.log.info("downloading rss feed: {s}", .{c_url});
+        const response = try engine.http.get(allocator, feed);
+        try feed_content.append(response.text);
+    }
+
     while (true) {
         std.time.sleep(1 * std.time.ns_per_s);
         try content.update("Test");
-        const response = try engine.http.get(std.heap.page_allocator, "https://api.weather.gov");
-        std.debug.print("RESPONSE: {d}\n---\n{s}", .{ response.code, response.text });
     }
 }
 
@@ -25,8 +34,6 @@ pub fn init() !void {
 
     // start our initial carousel timer
     _ = try std.Thread.spawn(.{}, doCarousel, .{});
-
-    // get our rss feeds
 }
 
 pub fn render() !void {

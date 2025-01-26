@@ -3,6 +3,7 @@ pub const curl = @cImport({
 });
 const std = @import("std");
 const errors = @import("errors.zig");
+const engine = @import("lib.zig");
 
 /// Python `requests` inspired response object
 const Response = struct {
@@ -52,22 +53,27 @@ pub fn get(allocator: std.mem.Allocator, url: []const u8) !Response {
     // initialize our empty response
     var response = try Response.init(allocator);
 
+    // make our url a c string
+    const c_url = try allocator.dupeZ(u8, url);
+
     // get our handle
-    const handle = getHandle(url, &response);
+    const handle = getHandle(c_url, &response);
     if (handle == null) {
         return errors.EngineError.CurlError;
     }
     defer curl.curl_easy_cleanup(handle.?);
 
-    // handle our curl easy result
-    const result = curl.curl_easy_perform(handle);
-    if (result != curl.CURLE_OK) {
+    // handle our curl easy curl_code
+    var curl_code = curl.curl_easy_perform(handle);
+    if (curl_code != curl.CURLE_OK) {
+        engine.sdl.SDL_LogError(0, curl.curl_easy_strerror(curl_code));
         return errors.EngineError.HttpError;
     }
 
-    const curl_code = curl.curl_easy_getinfo(handle, curl.CURLINFO_RESPONSE_CODE, &response.code);
+    curl_code = curl.curl_easy_getinfo(handle, curl.CURLINFO_RESPONSE_CODE, &response.code);
     if (curl_code != curl.CURLE_OK) {
-        @panic(try std.fmt.allocPrint(allocator, "Got curl_code of {d}", .{curl_code}));
+        engine.sdl.SDL_LogError(0, curl.curl_easy_strerror(curl_code));
+        return errors.EngineError.HttpError;
     }
 
     return response;
