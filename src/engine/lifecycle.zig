@@ -78,6 +78,7 @@ pub fn run() !void {
         defer allocator.free(newTitle);
         const null_term_slice = try allocator.dupeZ(u8, newTitle[0..newTitle.len]);
         sdl.SDL_SetWindowTitle(window, null_term_slice);
+        allocator.free(null_term_slice);
 
         // handle events
         while (sdl.SDL_PollEvent(&event) != 0) {

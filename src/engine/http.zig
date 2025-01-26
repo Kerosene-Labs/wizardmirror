@@ -55,6 +55,7 @@ pub fn get(allocator: std.mem.Allocator, url: []const u8) !Response {
 
     // make our url a c string
     const c_url = try allocator.dupeZ(u8, url);
+    defer allocator.free(c_url);
 
     // get our handle
     const handle = getHandle(c_url, &response);
