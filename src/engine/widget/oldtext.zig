@@ -15,7 +15,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
 
         fn text_changed() !void {
             // try getting our surface
-            const color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+            const color = engine.sdl.SDL_Color{ .r = 0, .g = 0, .b = 0, .a = 255 };
             var surface = surfaces.get(text_store.value);
             if (surface == null) {
                 const new_surface = engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, text_store.value.ptr, color);

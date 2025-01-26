@@ -4,7 +4,7 @@ const service = @import("service");
 
 var carousel_timer: ?engine.sdl.SDL_TimerID = null;
 var content = engine.state.StringStore.init("Only the initial text is rendered");
-const text = engine.widget.text.TextLine(&content, 0, 0);
+const text = engine.widget.text.TextLine(&content, 10, 10);
 
 const allocator = std.heap.page_allocator;
 
@@ -18,7 +18,7 @@ fn doCarousel() !void {
     }
     std.log.info("rss feeds downloaded, showing headlines", .{});
     std.time.sleep(2 * std.time.ns_per_s);
-    try content.update("AAAAAAAAAAAAAAAA");
+    try content.update("This does not RENDER! AAAAAAAAAAAAAAAAAAAAAAAAA");
     while (true) {
         std.time.sleep(1 * std.time.ns_per_s);
     }
@@ -26,10 +26,6 @@ fn doCarousel() !void {
 
 // Lifecycle functions
 pub fn init() !void {
-    // setup our text
-    try text.init();
-    try content.callSubscribers();
-
     // start our initial carousel timer
     _ = try std.Thread.spawn(.{}, doCarousel, .{});
 }

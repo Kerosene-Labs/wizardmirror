@@ -2,7 +2,7 @@ const component = @import("../component.zig");
 const engine = @import("../lib.zig");
 const std = @import("std");
 
-const default_color = engine.sdl.SDL_Color{ .r = 0, .g = 0, .b = 0, .a = 255 };
+const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -22,18 +22,16 @@ const Renderable = struct {
 
 var cache = std.StringHashMap(*Renderable).init(allocator);
 
-/// Pre-made text rendering component. Shares a global caching mechanism for surfaces, textures and rects.
+/// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
 pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
     return struct {
-        var to_render: ?*Renderable = null;
-
-        pub fn init() !void {
-            try text_store.subscribe(text_changed);
-        }
-
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
-        fn createRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
+        fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
+            if (engine.lifecycle.ttf_font == null) {
+                std.debug.print("Font load error: {s}\n", .{engine.sdl.TTF_GetError()});
+                return engine.errors.SDLError.Unknown;
+            }
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
@@ -62,32 +60,14 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
             pair.* = Renderable{
                 .surface = surface,
                 .texture = texture.?,
-                .rect = @constCast(rect),
+                .rect = rect,
             };
             return pair;
         }
 
-        fn text_changed() !void {
-            // try getting our surface texture pair from cache
-            var renderable_candidate = cache.get(text_store.value);
-            if (renderable_candidate == null) {
-                std.debug.print("cache miss: {s}\n", .{text_store.value});
-                renderable_candidate = try createRenderable(default_color, text_store.value);
-                try cache.put(text_store.value, renderable_candidate.?);
-            } else {
-                std.debug.print("cache hit: {s}\n", .{text_store.value});
-            }
-            to_render = renderable_candidate.?;
-        }
-
         pub fn render() !void {
-            // skip this itreration if we're still waiting on rendering
-            if (to_render == null) {
-                std.log.info("skipping render iteration", .{});
-                return;
-            }
-
-            const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, to_render.?.texture, null, to_render.?.rect);
+            const to_render: *Renderable = try getRenderable(default_color, text_store.value);
+            const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, to_render.texture, null, to_render.rect);
             if (err != 0) {
                 engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
                 return engine.errors.SDLError.RenderCopyFailed;
