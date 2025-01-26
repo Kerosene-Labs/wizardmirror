@@ -2,29 +2,38 @@ const component = @import("../component.zig");
 const engine = @import("../lib.zig");
 const std = @import("std");
 
-const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+const default_color = engine.sdl.SDL_Color{ .r = 0, .g = 0, .b = 0, .a = 255 };
 
-const allocator = std.heap.page_allocator;
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+const allocator = gpa.allocator();
 
 const Renderable = struct {
     surface: *engine.sdl.SDL_Surface,
     texture: *engine.sdl.SDL_Texture,
     rect: *engine.sdl.SDL_Rect,
+
+    fn deinit(self: @This()) !void {
+        try allocator.free(self.rect);
+        engine.sdl.SDL_FreeSurface(self.surface);
+        engine.sdl.SDL_DestroyTexture(self.texture);
+    }
 };
 
-var cache = std.StringHashMap(Renderable).init(allocator);
+var cache = std.StringHashMap(*Renderable).init(allocator);
 
-/// Pre-made text rendering component. Caches SDL_Surface's based on text input.
+/// Pre-made text rendering component. Shares a global caching mechanism for surfaces, textures and rects.
+/// Automatically subscribes to the given `StringStore`.
 pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
     return struct {
-        var to_render: ?Renderable = null;
+        var to_render: ?*Renderable = null;
 
         pub fn init() !void {
             try text_store.subscribe(text_changed);
         }
 
-        /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen ()
-        fn createRenderable(color: engine.sdl.SDL_Color, text: []const u8) !Renderable {
+        /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
+        fn createRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
@@ -41,10 +50,16 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
             const surface_w = @divTrunc(surface.*.w, 2);
             const surface_h = @divTrunc(surface.*.h, 2);
             const rect = try allocator.create(engine.sdl.SDL_Rect);
-            rect.* = engine.sdl.SDL_Rect{ .x = @intCast(x), .y = @intCast(y), .w = surface_w, .h = surface_h };
+            rect.* = engine.sdl.SDL_Rect{
+                .x = @intCast(x),
+                .y = @intCast(y),
+                .w = surface_w,
+                .h = surface_h,
+            };
 
-            // create our renderable, cache it
-            const pair = Renderable{
+            // create our renderable
+            const pair = try allocator.create(Renderable);
+            pair.* = Renderable{
                 .surface = surface,
                 .texture = texture.?,
                 .rect = @constCast(rect),
@@ -54,15 +69,15 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
 
         fn text_changed() !void {
             // try getting our surface texture pair from cache
-            const renderable_candidate = cache.get(text_store.value);
+            var renderable_candidate = cache.get(text_store.value);
             if (renderable_candidate == null) {
                 std.debug.print("cache miss: {s}\n", .{text_store.value});
-                to_render = try createRenderable(default_color, text_store.value);
-                try cache.put(text_store.value, to_render.?);
+                renderable_candidate = try createRenderable(default_color, text_store.value);
+                try cache.put(text_store.value, renderable_candidate.?);
             } else {
                 std.debug.print("cache hit: {s}\n", .{text_store.value});
             }
-            to_render = renderable_candidate;
+            to_render = renderable_candidate.?;
         }
 
         pub fn render() !void {
@@ -77,10 +92,6 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
                 engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
                 return engine.errors.SDLError.RenderCopyFailed;
             }
-        }
-
-        pub fn deinit() !void {
-            cache.deinit();
         }
     };
 }

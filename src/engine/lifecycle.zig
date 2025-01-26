@@ -91,7 +91,7 @@ pub fn run() !void {
         }
 
         // clear our screen
-        err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
+        err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 255, 255, 255, 255);
         if (err != 0) {
             sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to set the draw color color: %s", sdl.SDL_GetError());
             return errors.SDLError.SetRenderDrawColorFailed;

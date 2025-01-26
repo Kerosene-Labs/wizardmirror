@@ -18,8 +18,7 @@ fn doCarousel() !void {
     }
     std.log.info("rss feeds downloaded, showing headlines", .{});
     std.time.sleep(2 * std.time.ns_per_s);
-    try content.update("This doesn't render");
-    try content.callSubscribers();
+    try content.update("AAAAAAAAAAAAAAAA");
     while (true) {
         std.time.sleep(1 * std.time.ns_per_s);
     }
@@ -32,7 +31,6 @@ pub fn init() !void {
     try content.callSubscribers();
 
     // start our initial carousel timer
-    // try doCarousel();
     _ = try std.Thread.spawn(.{}, doCarousel, .{});
 }
 
