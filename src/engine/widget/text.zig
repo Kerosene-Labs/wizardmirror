@@ -17,7 +17,7 @@ var cache = std.StringHashMap(Renderable).init(allocator);
 /// Pre-made text rendering component. Caches SDL_Surface's based on text input.
 pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
     return struct {
-        var renderable: ?Renderable = null;
+        var to_render: ?Renderable = null;
 
         pub fn init() !void {
             try text_store.subscribe(text_changed);
@@ -54,28 +54,33 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
 
         fn text_changed() !void {
             // try getting our surface texture pair from cache
-            var renderable_candidate = cache.get(text_store.value);
+            const renderable_candidate = cache.get(text_store.value);
             if (renderable_candidate == null) {
-                renderable_candidate = try createRenderable(default_color, text_store.value);
-                try cache.put(text_store.value, renderable_candidate.?);
+                std.debug.print("cache miss: {s}\n", .{text_store.value});
+                to_render = try createRenderable(default_color, text_store.value);
+                try cache.put(text_store.value, to_render.?);
+            } else {
+                std.debug.print("cache hit: {s}\n", .{text_store.value});
             }
-            renderable = renderable_candidate;
+            to_render = renderable_candidate;
         }
 
         pub fn render() !void {
             // skip this itreration if we're still waiting on rendering
-            if (renderable == null) {
+            if (to_render == null) {
                 std.log.info("skipping render iteration", .{});
                 return;
             }
 
-            const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, renderable.?.texture, null, @ptrCast(&renderable.?.rect));
+            const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, to_render.?.texture, null, to_render.?.rect);
             if (err != 0) {
                 engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
                 return engine.errors.SDLError.RenderCopyFailed;
             }
         }
 
-        pub fn deinit() !void {}
+        pub fn deinit() !void {
+            cache.deinit();
+        }
     };
 }
