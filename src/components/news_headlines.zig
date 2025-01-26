@@ -12,7 +12,8 @@ fn doCarousel() !void {
     while (true) {
         std.time.sleep(1 * std.time.ns_per_s);
         try content.update("Test");
-        try engine.http.get("https://api.weather.gov");
+        const response = try engine.http.get(std.heap.page_allocator, "https://api.weather.gov");
+        std.debug.print("RESPONSE: {d}\n---\n{s}", .{ response.code, response.text });
     }
 }
 

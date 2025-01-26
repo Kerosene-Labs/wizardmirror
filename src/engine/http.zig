@@ -4,36 +4,42 @@ pub const curl = @cImport({
 const std = @import("std");
 const errors = @import("errors.zig");
 
-const BufferContext = struct {
-    initial: ?*u8 = null,
-    total_size: ?usize = null,
-    allocator: *std.mem.Allocator = std.heap.ArenaAllocator.init(),
+/// Python `requests` inspired response object
+const Response = struct {
+    allocator: std.mem.Allocator,
+    code: i64,
+    headers: std.StringHashMap([]const u8),
+    text: []const u8,
 
-    pub fn copy(self: @This()) ![]const u8 {
-        const curl_buffer: [*]const u8 = @ptrCast(self.initial.?);
-        const destination = try self.allocator.alloc(u8, self.total_size.? - 1);
-        std.mem.copyForwards(u8, destination, curl_buffer[0 .. self.total_size.? - 1]);
-        return destination;
-    }
-
-    pub fn deinit(self: @This()) !void {
-        self.allocator.free(memory: anytype)
+    pub fn init(allocator: std.mem.Allocator) !@This() {
+        return Response{
+            .allocator = allocator,
+            .code = 0,
+            .headers = std.StringHashMap([]const u8).init(allocator),
+            .text = &.{},
+        };
     }
 };
 
-fn writeCallback(ptr: ?*anyopaque, size: usize, nmemb: usize, userdata: ?*BufferContext) callconv(.C) usize {
+fn writeCallback(ptr: ?*anyopaque, size: usize, nmemb: usize, userdata: ?*Response) callconv(.C) usize {
     if (ptr == null or userdata == null) return 0;
-    userdata.?.total_size = size * nmemb;
-    userdata.?.initial = @ptrCast(ptr.?);
-    return userdata.?.total_size.?;
+
+    const curl_buffer: [*]const u8 = @ptrCast(ptr.?);
+    const total_size = size * nmemb;
+    const destination = userdata.?.allocator.alloc(u8, total_size - 1) catch {
+        return 0;
+    };
+    std.mem.copyForwards(u8, destination, curl_buffer[0 .. total_size - 1]);
+    userdata.?.text = destination;
+    return total_size;
 }
 
-fn getHandle(url: []const u8, context: *BufferContext) ?*curl.CURL {
+fn getHandle(url: []const u8, response: *Response) ?*curl.CURL {
     const handle = curl.curl_easy_init();
     if (handle) |non_null_handle| {
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_URL, url.ptr);
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_WRITEFUNCTION, writeCallback);
-        _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_WRITEDATA, context);
+        _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_WRITEDATA, response);
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_HTTP_VERSION, curl.CURL_HTTP_VERSION_NONE);
         return non_null_handle;
     } else {
@@ -41,18 +47,28 @@ fn getHandle(url: []const u8, context: *BufferContext) ?*curl.CURL {
     }
 }
 
-pub fn get(url: []const u8) !void {
-    var response = BufferContext{ .allocator = @constCast(&std.heap.page_allocator) };
+/// Send a `GET` request. Get an `http.Response` back.
+pub fn get(allocator: std.mem.Allocator, url: []const u8) !Response {
+    // initialize our empty response
+    var response = try Response.init(allocator);
+
+    // get our handle
     const handle = getHandle(url, &response);
     if (handle == null) {
         return errors.EngineError.CurlError;
     }
     defer curl.curl_easy_cleanup(handle.?);
 
+    // handle our curl easy result
     const result = curl.curl_easy_perform(handle);
     if (result != curl.CURLE_OK) {
         return errors.EngineError.HttpError;
     }
 
-    std.debug.print("{s}", .{try response.copy()});
+    const curl_code = curl.curl_easy_getinfo(handle, curl.CURLINFO_RESPONSE_CODE, &response.code);
+    if (curl_code != curl.CURLE_OK) {
+        @panic(try std.fmt.allocPrint(allocator, "Got curl_code of {d}", .{curl_code}));
+    }
+
+    return response;
 }
