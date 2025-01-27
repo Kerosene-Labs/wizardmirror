@@ -6,6 +6,7 @@ const allocator = std.heap.page_allocator;
 pub const StringStore = Store([]const u8);
 pub const BoolStore = Store(bool);
 pub const U32Store = Store(u32);
+pub const I32Store = Store(i32);
 
 // Inspired by Svelte stores, these are handy little doo-dads that allow code to subscribe to state changes.
 // Use the `init()` method to setup this struct.

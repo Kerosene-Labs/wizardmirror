@@ -8,15 +8,50 @@ const allocator = std.heap.page_allocator;
 
 pub const errors = error{ ParseError, NodeNotFound, XPathContextError, XPathEvaluationError };
 
-const Headline = struct {
+/// Represents an RSS `<item>`.
+pub const Item = struct {
     title: []const u8,
-    subtitle: []const u8,
+    description: ?[]const u8,
 };
 
-fn parseItem(node: [*c]libxml.xmlNode) !void {
-    std.debug.print("ITEM: {s}\n", .{libxml.xmlNodeGetContent(node)});
+/// A simple pair between a libxml2 `xmlXPathObject` and a reference to its nodes.
+const EvaluatedXPath = struct {
+    xpath_object: [*c]libxml.xmlXPathObject,
+    nodes: [][*c]libxml.xmlNode,
+
+    pub fn init(xpath_object: [*c]libxml.xmlXPathObject) !@This() {
+        const c_nodes = xpath_object.*.nodesetval;
+        const nodes = c_nodes.*.nodeTab[0..@intCast(c_nodes.*.nodeNr)];
+        return EvaluatedXPath{
+            .xpath_object = xpath_object,
+            .nodes = nodes,
+        };
+    }
+
+    pub fn deinit(self: @This()) void {
+        libxml.xmlXPathFreeObject(self.xpath_object);
+    }
+};
+
+fn parseItem(node: [*c]libxml.xmlNode) !Item {
+    var title: []const u8 = "";
+    var description: ?[]const u8 = null;
+
+    // iterate over each child node within our item node, find the ones we need
+    var current: [*c]libxml.xmlNode = @ptrCast(node.*.children);
+    while (current) |child| {
+        current = current.*.next;
+        const name = std.mem.span(child.*.name);
+        if (std.mem.eql(u8, name, "title")) {
+            title = std.mem.span(libxml.xmlNodeGetContent(child));
+        } else if (std.mem.eql(u8, name, "description")) {
+            description = std.mem.span(libxml.xmlNodeGetContent(child));
+        }
+    }
+    return Item{ .title = title, .description = description };
 }
 
+/// Helper to generate an `xmlPathContext` object, or return a Zig error
 fn getXpathContext(doc: [*c]libxml.xmlDoc) !libxml.xmlXPathContextPtr {
     const xpath_context = libxml.xmlXPathNewContext(doc);
     if (xpath_context == null) {
@@ -25,7 +60,19 @@ fn getXpathContext(doc: [*c]libxml.xmlDoc) !libxml.xmlXPathContextPtr {
     return xpath_context;
 }
 
-pub fn parse(text: []const u8) !void {
+/// Evaluate an XPath expression, getting an `EvaluatedXPath` instance back.
+fn evaluateXpath(xpath: []const u8, context: [*c]libxml.xmlXPathContext) !EvaluatedXPath {
+    const c_xpath = try allocator.dupeZ(u8, xpath);
+    defer allocator.free(c_xpath);
+    const obj = libxml.xmlXPathEvalExpression(c_xpath, context);
+    if (obj == null) {
+        return errors.XPathEvaluationError;
+    }
+    return EvaluatedXPath.init(obj);
+}
+
+/// Parse the given XML text into a set of RSS Items
+pub fn parse(text: []const u8) !std.ArrayList(Item) {
     // convert our xml content to a c string
     const c_text = try allocator.dupeZ(u8, text);
     defer allocator.free(c_text);
@@ -46,27 +93,13 @@ pub fn parse(text: []const u8) !void {
     // get our xpath context for this document
     const xpath_context = try getXpathContext(doc);
     defer libxml.xmlXPathFreeContext(xpath_context);
-    const xpath_obj = libxml.xmlXPathEvalExpression("//rss/channel/item", xpath_context);
-    defer libxml.xmlXPathFreeObject(xpath_obj);
-    if (xpath_obj == null) {
-        return errors.XPathEvaluationError;
-    }
+    const items = try evaluateXpath("//rss/channel/item", xpath_context);
+    defer items.deinit();
 
     // iterate over our items
-
-    // get our root and channel
-    // const root = libxml.xmlDocGetRootElement(doc);
-    // if (root == null) {
-    //     return errors.NodeNotFound;
-    // }
-    // const channel = root.*.children[0];
-
-    // var current = channel.children;
-    // while (current) |item_candidate| {
-    //     current = item_candidate.*.next;
-    //     if (std.mem.eql(u8, std.mem.span(item_candidate.*.name), "item")) {
-    //         try parseItem(item_candidate);
-    //         continue;
-    //     }
-    // }
+    var parsed_items = std.ArrayList(Item).init(allocator);
+    for (items.nodes) |node| {
+        try parsed_items.append(try parseItem(node));
+    }
+    return parsed_items;
 }

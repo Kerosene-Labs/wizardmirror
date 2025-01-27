@@ -25,7 +25,7 @@ var cache = std.StringHashMap(*Renderable).init(allocator);
 /// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
 pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
-    return struct {
+    const _type = struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
         fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
             const candidate = cache.get(text);
@@ -42,6 +42,8 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
 
             const surface = engine.sdl.TTF_RenderText_Blended(engine.lifecycle.ttf_font, c_text, color);
             if (surface == null) {
+                engine.sdl.SDL_LogError(engine.sdl.SDL_LOG_CATEGORY_APPLICATION, "failed to render text: %s", engine.sdl.SDL_GetError());
+
                 return engine.errors.SDLError.RenderTextFailed;
             }
 
@@ -54,8 +56,8 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
             const surface_h = @divTrunc(surface.*.h, 2);
             const rect = try allocator.create(engine.sdl.SDL_Rect);
             rect.* = engine.sdl.SDL_Rect{
-                .x = @intCast(x),
-                .y = @intCast(y),
+                .x = @intCast(x * engine.lifecycle.scaling_factor.get()),
+                .y = @intCast(y * engine.lifecycle.scaling_factor.get()),
                 .w = surface_w,
                 .h = surface_h,
             };
@@ -80,4 +82,5 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
             }
         }
     };
+    return _type;
 }
