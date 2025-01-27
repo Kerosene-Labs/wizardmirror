@@ -66,7 +66,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
         }
 
         pub fn render() !void {
-            const to_render: *Renderable = try getRenderable(default_color, text_store.value);
+            const to_render: *Renderable = try getRenderable(default_color, text_store.get());
             const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, to_render.texture, null, to_render.rect);
             if (err != 0) {
                 engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
