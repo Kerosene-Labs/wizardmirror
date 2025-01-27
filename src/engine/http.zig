@@ -10,6 +10,7 @@ const Response = struct {
     allocator: std.mem.Allocator,
     code: i64,
     headers: std.StringHashMap([]const u8),
+    buffer: std.ArrayList([]const u8),
     text: []const u8,
 
     pub fn init(allocator: std.mem.Allocator) !@This() {
@@ -17,6 +18,7 @@ const Response = struct {
             .allocator = allocator,
             .code = 0,
             .headers = std.StringHashMap([]const u8).init(allocator),
+            .buffer = std.ArrayList([]const u8).init(allocator),
             .text = &.{},
         };
     }
@@ -25,13 +27,16 @@ const Response = struct {
 fn writeCallback(ptr: ?*anyopaque, size: usize, nmemb: usize, userdata: ?*Response) callconv(.C) usize {
     if (ptr == null or userdata == null) return 0;
 
+    // if we're getting our data for the first time, initialize our destination buffer
     const curl_buffer: [*]const u8 = @ptrCast(ptr.?);
     const total_size = size * nmemb;
-    const destination = userdata.?.allocator.alloc(u8, total_size - 1) catch {
+    const destination = userdata.?.allocator.alloc(u8, total_size) catch {
         return 0;
     };
-    std.mem.copyForwards(u8, destination, curl_buffer[0 .. total_size - 1]);
-    userdata.?.text = destination;
+    std.mem.copyForwards(u8, destination, curl_buffer[0..total_size]);
+    userdata.?.buffer.append(destination) catch {
+        return 0;
+    };
     return total_size;
 }
 
@@ -77,5 +82,19 @@ pub fn get(allocator: std.mem.Allocator, url: []const u8) !Response {
         return errors.EngineError.HttpError;
     }
 
+    // calculate our buffer size
+    var total_size: u64 = 0;
+    for (response.buffer.items) |chunk| {
+        total_size += chunk.len;
+    }
+
+    const text_buffer = try allocator.alloc(u8, total_size);
+    var current_pos: u64 = 0;
+    for (response.buffer.items) |chunk| {
+        std.mem.copyForwards(u8, text_buffer[current_pos..][0..chunk.len], chunk);
+        current_pos += chunk.len;
+    }
+
+    response.text = text_buffer;
     return response;
 }

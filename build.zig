@@ -51,10 +51,12 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{ .name = "wizardmirror", .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize, .link_libc = true });
+    // exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/usr/include/libxml2/libxml" });
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("curl");
+    exe.linkSystemLibrary("xml2");
     exe.root_module.addImport("engine", engine);
     exe.root_module.addImport("components", components);
     exe.root_module.addImport("service", service);

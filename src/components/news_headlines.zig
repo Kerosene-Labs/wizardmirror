@@ -9,13 +9,17 @@ const allocator = std.heap.page_allocator;
 
 // Internal functions
 fn doCarousel() !void {
+    const config = service.config.get();
     var feed_content = std.ArrayList([]const u8).init(allocator);
-    for (service.config.get().rss_feeds) |feed| {
+    for (config.rss_feeds) |feed| {
         std.log.info("downloading rss feed: {s}", .{feed});
         const response = try engine.http.get(allocator, feed);
         try feed_content.append(response.text);
     }
-    std.log.info("rss feeds downloaded, showing headlines", .{});
+    std.log.info("{d} rss feed(s) downloaded, showing headlines", .{config.rss_feeds.len});
+
+    // TODO remove
+    try service.rss.parse(feed_content.items[0]);
 
     // enter our subloop for this carousel
     while (true) {

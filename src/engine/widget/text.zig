@@ -28,6 +28,11 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
     return struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
         fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
+            const candidate = cache.get(text);
+            if (candidate != null) {
+                return candidate.?;
+            }
+
             if (engine.lifecycle.ttf_font == null) {
                 std.debug.print("Font load error: {s}\n", .{engine.sdl.TTF_GetError()});
                 return engine.errors.SDLError.Unknown;
@@ -62,6 +67,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i32, y: i32) type {
                 .texture = texture.?,
                 .rect = rect,
             };
+            try cache.put(text, pair);
             return pair;
         }
 
