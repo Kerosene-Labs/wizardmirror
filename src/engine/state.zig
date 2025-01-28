@@ -6,23 +6,24 @@ const allocator = std.heap.page_allocator;
 pub const StringStore = Store([]const u8);
 pub const BoolStore = Store(bool);
 pub const U32Store = Store(u32);
+pub const I32Store = Store(i32);
 
 // Inspired by Svelte stores, these are handy little doo-dads that allow code to subscribe to state changes.
 // Use the `init()` method to setup this struct.
 pub fn Store(comptime T: type) type {
     return struct {
-        value: T,
+        unsafe_value: T,
         subscriptions: std.ArrayList(*const fn () anyerror!void),
+        mutex: std.Thread.Mutex,
 
         // Initialize a new store with a `val` of `T`, and an initial subscriber. This initial subscriber will be called after creation.
         // Due to language
-        pub fn init(val: T) !@This() {
-            var new = @This(){
-                .value = val,
+        pub fn init(val: T) @This() {
+            return @This(){
+                .unsafe_value = val,
                 .subscriptions = std.ArrayList(*const fn () anyerror!void).init(allocator),
+                .mutex = std.Thread.Mutex{},
             };
-            try new.callSubscribers();
-            return new;
         }
 
         // Call all the subscribers
@@ -32,9 +33,15 @@ pub fn Store(comptime T: type) type {
             }
         }
 
-        // Set the value of this store. After setting, we'll call the subscribers to let them know their subscribed value has changed.
+        pub fn get(self: @This()) T {
+            return self.unsafe_value;
+        }
+
+        // Set the value of this store (mutexed). After setting, we'll call the subscribers to let them know their subscribed value has changed.
         pub fn update(self: *@This(), new: T) !void {
-            self.value = new;
+            self.mutex.lock();
+            defer self.mutex.unlock();
+            self.unsafe_value = new;
             try callSubscribers(self);
         }
 

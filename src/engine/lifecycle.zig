@@ -1,4 +1,4 @@
-const lib = @import("lib.zig");
+const engine = @import("lib.zig");
 const errors = @import("errors.zig");
 const component = @import("component.zig");
 const std = @import("std");
@@ -6,14 +6,29 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub const scaling_factor: f32 = 2;
+pub var scaling_factor = engine.state.I32Store.init(1);
 pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
 pub var ttf_font: ?*sdl.TTF_Font = null;
 
-// run the engine
-pub fn run(components: []const component.Component) !void {
-    sdl.SDL_Log("Welcome to WizardMirror");
+var font_cache = std.AutoHashMap(c_int, *sdl.TTF_Font).init(std.heap.page_allocator);
 
+pub fn getFont(requested_scaling_factor: c_int) *sdl.TTF_Font {
+    var cached = font_cache.get(requested_scaling_factor);
+    if (cached == null) {
+        cached = sdl.TTF_OpenFont("/usr/share/fonts/open-sans/OpenSans-Bold.ttf", @intCast(16 * requested_scaling_factor));
+        if (cached == null) {
+            sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", sdl.SDL_GetError());
+            @panic("Failed to load font");
+        }
+        font_cache.put(requested_scaling_factor, cached.?) catch {
+            @panic("Failed to cache font");
+        };
+    }
+    return cached.?;
+}
+
+// run the engine
+pub fn run() !void {
     // initialize sdl
     if (sdl.SDL_Init(sdl.SDL_INIT_EVERYTHING) != 0) {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL: %s", sdl.SDL_GetError());
@@ -27,11 +42,6 @@ pub fn run(components: []const component.Component) !void {
         return errors.SDLError.TTFInitFailed;
     }
     defer sdl.TTF_Quit();
-    ttf_font = sdl.TTF_OpenFont("/usr/share/fonts/open-sans/OpenSans-Bold.ttf", @round(16 * (scaling_factor * 2)));
-    if (ttf_font == null) {
-        sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", sdl.SDL_GetError());
-        return errors.SDLError.TTFInitFailed;
-    }
     sdl.TTF_SetFontHinting(ttf_font, sdl.TTF_HINTING_NORMAL);
 
     // create our prerequisites
@@ -56,7 +66,7 @@ pub fn run(components: []const component.Component) !void {
     var event: sdl.SDL_Event = undefined;
 
     // initialize components
-    try component.initAll(components);
+    try component.initAll();
 
     // enter our main loop
     sdl.SDL_Log("Blasting off...");
@@ -80,16 +90,30 @@ pub fn run(components: []const component.Component) !void {
         defer allocator.free(newTitle);
         const null_term_slice = try allocator.dupeZ(u8, newTitle[0..newTitle.len]);
         sdl.SDL_SetWindowTitle(window, null_term_slice);
+        allocator.free(null_term_slice);
 
         // handle events
         while (sdl.SDL_PollEvent(&event) != 0) {
             if (event.type == sdl.SDL_QUIT) {
                 sdl.SDL_Log("Got kill signal, cleaning up");
-                try component.deinitAll(components);
+                try component.deinitAll();
                 sdl.SDL_Log("Goodbye :)");
                 return;
             }
         }
+
+        // calculate our scaling factor
+        var width: c_int = 0;
+        var height: c_int = 0;
+        sdl.SDL_GetWindowSizeInPixels(window, &width, &height);
+        if (width >= 400 and width <= 799) {
+            try scaling_factor.update(2);
+        } else if (width >= 800) {
+            try scaling_factor.update(3);
+        }
+
+        // get our cached font
+        ttf_font = getFont(@intCast(scaling_factor.get()));
 
         // clear our screen
         err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
@@ -104,7 +128,7 @@ pub fn run(components: []const component.Component) !void {
         }
 
         // render the components
-        try component.renderAll(components);
+        try component.renderAll();
         sdl.SDL_RenderPresent(sdl_renderer);
     }
 }

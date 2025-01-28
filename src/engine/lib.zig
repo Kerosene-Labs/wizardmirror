@@ -7,6 +7,7 @@ pub const state = @import("state.zig");
 pub const component = @import("component.zig");
 pub const lifecycle = @import("lifecycle.zig");
 pub const widget = @import("widget/lib.zig");
+pub const http = @import("http.zig");
 
 // required internal modules
 const std = @import("std");

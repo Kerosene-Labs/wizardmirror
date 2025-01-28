@@ -30,12 +30,20 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const service = b.createModule(.{
+        .root_source_file = b.path("src/service/lib.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    service.addImport("engine", engine);
+
     const components = b.createModule(.{
         .root_source_file = b.path("src/components/lib.zig"),
         .target = target,
         .optimize = optimize,
     });
     components.addImport("engine", engine);
+    components.addImport("service", service);
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -43,11 +51,15 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{ .name = "wizardmirror", .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize, .link_libc = true });
+    // exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/usr/include/libxml2/libxml" });
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("SDL2_ttf");
+    exe.linkSystemLibrary("curl");
+    exe.linkSystemLibrary("xml2");
     exe.root_module.addImport("engine", engine);
     exe.root_module.addImport("components", components);
+    exe.root_module.addImport("service", service);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
