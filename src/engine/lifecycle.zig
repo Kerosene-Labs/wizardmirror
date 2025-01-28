@@ -6,26 +6,7 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub var scaling_factor = engine.state.I32Store.init(1);
 pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
-pub var ttf_font: ?*sdl.TTF_Font = null;
-
-var font_cache = std.AutoHashMap(c_int, *sdl.TTF_Font).init(std.heap.page_allocator);
-
-pub fn getFont(requested_scaling_factor: c_int) *sdl.TTF_Font {
-    var cached = font_cache.get(requested_scaling_factor);
-    if (cached == null) {
-        cached = sdl.TTF_OpenFont("/usr/share/fonts/open-sans/OpenSans-Bold.ttf", @intCast(16 * requested_scaling_factor));
-        if (cached == null) {
-            sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", sdl.SDL_GetError());
-            @panic("Failed to load font");
-        }
-        font_cache.put(requested_scaling_factor, cached.?) catch {
-            @panic("Failed to cache font");
-        };
-    }
-    return cached.?;
-}
 
 // run the engine
 pub fn run() !void {
@@ -42,7 +23,6 @@ pub fn run() !void {
         return errors.SDLError.TTFInitFailed;
     }
     defer sdl.TTF_Quit();
-    sdl.TTF_SetFontHinting(ttf_font, sdl.TTF_HINTING_NORMAL);
 
     // create our prerequisites
     const window = sdl.SDL_CreateWindow(
@@ -87,7 +67,7 @@ pub fn run() !void {
         }
         const allocator = std.heap.page_allocator;
         const newTitle: []u8 = try std.fmt.allocPrint(allocator, "WizardMirror - FPS: {d:.2}", .{fps});
-        defer allocator.free(newTitle);
+        allocator.free(newTitle);
         const null_term_slice = try allocator.dupeZ(u8, newTitle[0..newTitle.len]);
         sdl.SDL_SetWindowTitle(window, null_term_slice);
         allocator.free(null_term_slice);
@@ -101,19 +81,6 @@ pub fn run() !void {
                 return;
             }
         }
-
-        // calculate our scaling factor
-        var width: c_int = 0;
-        var height: c_int = 0;
-        sdl.SDL_GetWindowSizeInPixels(window, &width, &height);
-        if (width >= 400 and width <= 799) {
-            try scaling_factor.update(2);
-        } else if (width >= 800) {
-            try scaling_factor.update(3);
-        }
-
-        // get our cached font
-        ttf_font = getFont(@intCast(scaling_factor.get()));
 
         // clear our screen
         err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);

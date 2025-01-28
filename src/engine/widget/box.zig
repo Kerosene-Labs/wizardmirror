@@ -7,8 +7,10 @@ const Direction = enum {
 
 const Box = struct {
     pub const direction: Direction = Direction.Horizontal;
-    pub const padding: u8 = 0;
-    pub const margin: u8 = 0;
+    pub const padding: u64 = 0;
+    pub const margin: u64 = 0;
+    pub const width: u64 = 0;
+    pub const height: u64 = 0;
 
     pub fn init() !void {}
     pub fn render() !void {}

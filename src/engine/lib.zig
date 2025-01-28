@@ -8,11 +8,5 @@ pub const component = @import("component.zig");
 pub const lifecycle = @import("lifecycle.zig");
 pub const widget = @import("widget/lib.zig");
 pub const http = @import("http.zig");
-
-// required internal modules
-const std = @import("std");
-
-// represents the state of our initialization
-pub const InitializationContext = struct {
-    components: []const type,
-};
+pub const layout = @import("layout.zig");
+pub const font = @import("font.zig");
