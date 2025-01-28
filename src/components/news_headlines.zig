@@ -6,7 +6,7 @@ var carousel_timer: ?engine.sdl.SDL_TimerID = null;
 var title = engine.state.StringStore.init("...");
 var description = engine.state.StringStore.init("...");
 const title_text = engine.widget.text.TextLine(&title, 10, 10);
-const description_text = engine.widget.text.TextLine(&description, 10, 50);
+const description_text = engine.widget.text.TextLine(&description, 10, 20);
 const allocator = std.heap.page_allocator;
 
 // Internal functions
