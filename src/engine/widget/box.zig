@@ -6,8 +6,11 @@ const Direction = enum {
 };
 
 const Box = struct {
-    pub const children: []const component.Component = .{};
     pub const direction: Direction = Direction.Horizontal;
-    pub const padding: u8;
-    pub const margin: u8;
+    pub const padding: u8 = 0;
+    pub const margin: u8 = 0;
+
+    pub fn init() !void {}
+    pub fn render() !void {}
+    pub fn deinit() !void {}
 };
