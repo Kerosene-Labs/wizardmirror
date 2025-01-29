@@ -7,6 +7,7 @@ const sdl = @cImport({
 });
 
 pub var sdl_renderer: ?*sdl.SDL_Renderer = null;
+pub var sdl_window: ?*sdl.SDL_Window = null;
 
 // run the engine
 pub fn run() !void {
@@ -25,7 +26,7 @@ pub fn run() !void {
     defer sdl.TTF_Quit();
 
     // create our prerequisites
-    const window = sdl.SDL_CreateWindow(
+    sdl_window = sdl.SDL_CreateWindow(
         "WizardMirror",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
@@ -33,13 +34,13 @@ pub fn run() !void {
         800,
         sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_ALLOW_HIGHDPI,
     );
-    if (window == null) {
+    if (sdl_window == null) {
         sdl.SDL_LogError(sdl.SDL_LOG_CATEGORY_APPLICATION, "Failed to create window: %s", sdl.SDL_GetError());
         return errors.SDLError.CreateWindowFailed;
     }
-    defer sdl.SDL_DestroyWindow(window);
+    defer sdl.SDL_DestroyWindow(sdl_window);
 
-    sdl_renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
+    sdl_renderer = sdl.SDL_CreateRenderer(sdl_window, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_PRESENTVSYNC);
     defer sdl.SDL_DestroyRenderer(sdl_renderer);
 
     sdl.SDL_RenderPresent(sdl_renderer);
@@ -67,9 +68,9 @@ pub fn run() !void {
         }
         const allocator = std.heap.page_allocator;
         const newTitle: []u8 = try std.fmt.allocPrint(allocator, "WizardMirror - FPS: {d:.2}", .{fps});
-        allocator.free(newTitle);
         const null_term_slice = try allocator.dupeZ(u8, newTitle[0..newTitle.len]);
-        sdl.SDL_SetWindowTitle(window, null_term_slice);
+        sdl.SDL_SetWindowTitle(sdl_window, null_term_slice);
+        allocator.free(newTitle);
         allocator.free(null_term_slice);
 
         // handle events
@@ -81,6 +82,9 @@ pub fn run() !void {
                 return;
             }
         }
+
+        // calculate our root font size
+        try engine.layout.scaleRootFontSize();
 
         // clear our screen
         err = sdl.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
