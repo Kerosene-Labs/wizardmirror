@@ -18,6 +18,7 @@ pub const FontRemPxMap = struct {
     weight: FontWeight,
 };
 
+/// HashMap Context
 const FontRemPxMapKeyContext = struct {
     pub fn hash(_: @This(), key: FontRemPxMap) u64 {
         const rem_bits: u64 = @bitCast(key.rem);

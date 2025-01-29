@@ -5,11 +5,16 @@ const std = @import("std");
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-var cache = std.StringHashMap(*Renderable).init(allocator);
+pub const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
 
-const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+/// Represents the text the user is requesting
+const CacheKey = struct {
+    text: []const u8,
+    font_size: engine.layout.Px,
+    font_weight: engine.font.FontWeight,
+};
 
-/// Represents a cacheable pair of surface, texture and rect.
+/// Represents a cacheable group of a surface, texture and rect.
 const Renderable = struct {
     surface: *engine.sdl.SDL_Surface,
     texture: *engine.sdl.SDL_Texture,
@@ -23,19 +28,44 @@ const Renderable = struct {
     }
 };
 
+/// HashMap Context
+const TextContextHashMapContext = struct {
+    pub fn hash(_: @This(), key: CacheKey) u64 {
+        var hasher = std.hash.Wyhash.init(0);
+        const bit_font_size: u64 = @bitCast(key.font_size);
+        hasher.update(std.mem.asBytes(&bit_font_size));
+        hasher.update(key.font_weight);
+        hasher.update(key.text);
+        return hasher.final();
+    }
+
+    pub fn eql(_: @This(), a: CacheKey, b: CacheKey) bool {
+        return a.font_size == b.font_size and std.mem.eql(u8, a.font_weight, b.font_weight) and std.mem.eql(u8, a.text, b.text);
+    }
+};
+
+var cache = std.HashMap(CacheKey, *Renderable, TextContextHashMapContext, std.hash_map.default_max_load_percentage).init(allocator);
+
 /// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
-pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontWeight, x: i64, y: i64) type {
+pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, weight: engine.font.FontWeight, color: engine.sdl.SDL_Color, x: engine.layout.Rem, y: engine.layout.Rem) type {
     const _type = struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
-        fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !?*Renderable {
-            // if our text was provided, skip rendering
+        fn getRenderable(text: []const u8) !?*Renderable {
+            // if our text wasn't provided, skip rendering
             if (std.mem.eql(u8, text, "")) {
                 return null;
             }
 
+            // set our text context
+            const cache_key = CacheKey{
+                .text = text,
+                .font_size = engine.layout.getPixelsForRem(size),
+                .font_weight = weight,
+            };
+
             // get our cache candidate, ensure its valid
-            const candidate = cache.get(text);
+            const candidate = cache.get(cache_key);
             if (candidate != null and (engine.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
                 return candidate.?;
             }
@@ -43,25 +73,24 @@ pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontW
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = engine.sdl.TTF_RenderText_Blended(try engine.font.getFont(1.0, weight), c_text, color);
+            const surface = engine.sdl.TTF_RenderUTF8_Blended(try engine.font.getFont(size, weight), c_text, color);
             if (surface == null) {
-                engine.sdl.SDL_LogError(engine.sdl.SDL_LOG_CATEGORY_APPLICATION, "failed to render text: %s", engine.sdl.SDL_GetError());
+                std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
                 return engine.errors.SDLError.RenderTextFailed;
             }
 
             const texture = engine.sdl.SDL_CreateTextureFromSurface(engine.lifecycle.sdl_renderer, surface);
             if (texture == null) {
+                std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
                 return engine.errors.SDLError.CreateTextureFromSurfaceFailed;
             }
 
-            const surface_w = @divTrunc(surface.*.w, 2);
-            const surface_h = @divTrunc(surface.*.h, 2);
             const rect = try allocator.create(engine.sdl.SDL_Rect);
             rect.* = engine.sdl.SDL_Rect{
-                .x = @intCast(x),
-                .y = @intCast(y),
-                .w = surface_w,
-                .h = surface_h,
+                .x = @intCast(engine.layout.getPixelsForRem(x)),
+                .y = @intCast(engine.layout.getPixelsForRem(y)),
+                .w = surface.*.w,
+                .h = surface.*.h,
             };
 
             // create our renderable
@@ -72,16 +101,16 @@ pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontW
                 .rect = rect,
                 .last_accessed = engine.sdl.SDL_GetTicks(),
             };
-            try cache.put(text, pair);
+            try cache.put(cache_key, pair);
             return pair;
         }
 
         pub fn render() !void {
-            const to_render = try getRenderable(default_color, text_store.get());
-            if (to_render != null) |non_null_renderable| {
+            const to_render = try getRenderable(text_store.get());
+            if (to_render) |non_null_renderable| {
                 const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, non_null_renderable.texture, null, non_null_renderable.rect);
                 if (err != 0) {
-                    engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
+                    std.log.err("SDL Error: {s}", .{engine.sdl.SDL_GetError()});
                     return engine.errors.SDLError.RenderCopyFailed;
                 }
             }

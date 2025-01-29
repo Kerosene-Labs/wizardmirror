@@ -3,11 +3,10 @@ const engine = @import("lib.zig");
 
 pub const Rem = f64;
 pub const RemStr = []const u8;
-pub const Px = i64;
+pub const Px = u64;
 
 pub var base_font_size: Px = 16;
-pub var user_font_scaling_factor: i64 = 1;
-pub var dpi_font_scaling_factor: i64 = 1;
+pub var dpi_font_scale_factor: Px = 0;
 pub var root_font_size: Px = 0;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -21,16 +20,16 @@ pub fn scaleRootFontSize() !void {
     const display_index = engine.sdl.SDL_GetWindowDisplayIndex(engine.lifecycle.sdl_window);
     _ = engine.sdl.SDL_GetDisplayDPI(display_index, &ddpi, &hdpi, &vdpi);
     if (vdpi >= 200) {
-        dpi_font_scaling_factor = 3;
+        dpi_font_scale_factor = 8;
     }
-    root_font_size = base_font_size * (dpi_font_scaling_factor + user_font_scaling_factor);
+
+    root_font_size = base_font_size + dpi_font_scale_factor;
 }
 
 /// Get how many pixels the given rem value should be;
 pub fn getPixelsForRem(rem: Rem) Px {
     const px_float: f64 = @floatFromInt(root_font_size);
     const x: Px = @intFromFloat(@round(rem * px_float));
-    std.debug.print("Rem {d}-> Pixels :{d}\n", .{ rem, x });
     return x;
 }
 

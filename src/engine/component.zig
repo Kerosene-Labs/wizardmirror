@@ -19,7 +19,7 @@ pub fn register(
     render: *const fn () anyerror!void,
     deinit: *const fn () anyerror!void,
 ) !void {
-    engine.sdl.SDL_Log("Registered component '%s'", name.ptr);
+    std.log.info("registered component '{s}'", .{name});
     try registry.append(Component{
         .name = name,
         .init_ptr = init,
@@ -30,12 +30,12 @@ pub fn register(
 
 /// Iterate over all components, initialize them
 pub fn initAll() !void {
-    engine.sdl.SDL_Log("Beginning initialization of components");
+    std.log.info("beginning initialization of components", .{});
     for (registry.items) |component| {
-        engine.sdl.SDL_Log(" - Component '%s' - initializing", component.name.ptr);
+        std.log.info(" - '{s}' : calling init()", .{component.name});
         try component.init_ptr();
     }
-    engine.sdl.SDL_Log("Component initialization complete");
+    std.log.info("component initialization complete", .{});
 }
 
 /// Iterate over all components, render them
@@ -47,10 +47,10 @@ pub fn renderAll() !void {
 
 /// Iterate over all components, render them
 pub fn deinitAll() !void {
-    engine.sdl.SDL_Log("Beginning de-initialization of components");
+    std.log.info("beginning de-initialization of components", .{});
     for (registry.items) |component| {
-        engine.sdl.SDL_Log(" - Component '%s' - deinitializing", component.name.ptr);
+        std.log.info(" - '{s}' - deinitializing", .{component.name});
         try component.deinit_ptr();
     }
-    engine.sdl.SDL_Log("Beginning de-initialization of components");
+    std.log.info("beginning de-initialization of components", .{});
 }

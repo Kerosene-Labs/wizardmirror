@@ -72,13 +72,13 @@ pub fn get(allocator: std.mem.Allocator, url: []const u8) !Response {
     // handle our curl easy curl_code
     var curl_code = curl.curl_easy_perform(handle);
     if (curl_code != curl.CURLE_OK) {
-        engine.sdl.SDL_LogError(0, curl.curl_easy_strerror(curl_code));
+        std.log.err("net request failed: {s}", .{curl.curl_easy_strerror(curl_code)});
         return errors.EngineError.HttpError;
     }
 
     curl_code = curl.curl_easy_getinfo(handle, curl.CURLINFO_RESPONSE_CODE, &response.code);
     if (curl_code != curl.CURLE_OK) {
-        engine.sdl.SDL_LogError(0, curl.curl_easy_strerror(curl_code));
+        std.log.err("net request failed: {s}", .{curl.curl_easy_strerror(curl_code)});
         return errors.EngineError.HttpError;
     }
 
