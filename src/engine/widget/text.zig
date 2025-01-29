@@ -28,7 +28,12 @@ const Renderable = struct {
 pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontWeight, x: i64, y: i64) type {
     const _type = struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
-        fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
+        fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !?*Renderable {
+            // if our text was provided, skip rendering
+            if (std.mem.eql(u8, text, "")) {
+                return null;
+            }
+
             // get our cache candidate, ensure its valid
             const candidate = cache.get(text);
             if (candidate != null and (engine.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
@@ -72,11 +77,13 @@ pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontW
         }
 
         pub fn render() !void {
-            const to_render: *Renderable = try getRenderable(default_color, text_store.get());
-            const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, to_render.texture, null, to_render.rect);
-            if (err != 0) {
-                engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
-                return engine.errors.SDLError.RenderCopyFailed;
+            const to_render = try getRenderable(default_color, text_store.get());
+            if (to_render != null) |non_null_renderable| {
+                const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, non_null_renderable.texture, null, non_null_renderable.rect);
+                if (err != 0) {
+                    engine.sdl.SDL_Log("SDL Error: %s", engine.sdl.SDL_GetError());
+                    return engine.errors.SDLError.RenderCopyFailed;
+                }
             }
         }
     };

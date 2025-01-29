@@ -55,7 +55,7 @@ pub fn init() !void {
 
 pub fn render() !void {
     try title_text.render();
-    // try description_text.render();
+    try description_text.render();
 }
 
 pub fn deinit() !void {}
