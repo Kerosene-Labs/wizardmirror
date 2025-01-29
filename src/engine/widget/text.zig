@@ -14,6 +14,7 @@ const Renderable = struct {
     surface: *engine.sdl.SDL_Surface,
     texture: *engine.sdl.SDL_Texture,
     rect: *engine.sdl.SDL_Rect,
+    last_accessed: u32,
 
     fn deinit(self: @This()) !void {
         try allocator.free(self.rect);
@@ -24,19 +25,20 @@ const Renderable = struct {
 
 /// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
-pub fn TextLine(text_store: *engine.state.StringStore, x: i64, y: i64) type {
+pub fn TextLine(text_store: *engine.state.StringStore, weight: engine.font.FontWeight, x: i64, y: i64) type {
     const _type = struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
         fn getRenderable(color: engine.sdl.SDL_Color, text: []const u8) !*Renderable {
+            // get our cache candidate, ensure its valid
             const candidate = cache.get(text);
-            if (candidate != null) {
+            if (candidate != null and (engine.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
                 return candidate.?;
             }
 
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = engine.sdl.TTF_RenderText_Blended(try engine.font.getFont(1.0), c_text, color);
+            const surface = engine.sdl.TTF_RenderText_Blended(try engine.font.getFont(1.0, weight), c_text, color);
             if (surface == null) {
                 engine.sdl.SDL_LogError(engine.sdl.SDL_LOG_CATEGORY_APPLICATION, "failed to render text: %s", engine.sdl.SDL_GetError());
                 return engine.errors.SDLError.RenderTextFailed;
@@ -63,6 +65,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, x: i64, y: i64) type {
                 .surface = surface,
                 .texture = texture.?,
                 .rect = rect,
+                .last_accessed = engine.sdl.SDL_GetTicks(),
             };
             try cache.put(text, pair);
             return pair;

@@ -80,6 +80,12 @@ pub fn run() !void {
                 try component.deinitAll();
                 sdl.SDL_Log("Goodbye :)");
                 return;
+            } else if (event.type == sdl.SDL_KEYUP) {
+                const key: sdl.SDL_Keycode = event.key.keysym.sym;
+                if (key == sdl.SDLK_ESCAPE) {
+                    std.debug.print("User Font Scaling Factor: {d}\n", .{engine.layout.user_font_scaling_factor});
+                    engine.layout.user_font_scaling_factor += 1;
+                }
             }
         }
 
