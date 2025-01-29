@@ -2,11 +2,13 @@ const engine = @import("engine");
 const std = @import("std");
 const service = @import("service");
 
+const title_color = engine.widget.text.default_color;
+const description_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 128 };
 var carousel_timer: ?engine.sdl.SDL_TimerID = null;
 var title = engine.state.StringStore.init("...");
-var description = engine.state.StringStore.init("...");
-const title_text = engine.widget.text.TextLine(&title, 10, 10);
-const description_text = engine.widget.text.TextLine(&description, 10, 20);
+var description = engine.state.StringStore.init("");
+const title_text = engine.widget.text.TextLine(&title, 1.0, engine.font.FontWeights.BOLD, title_color, 0, 0);
+const description_text = engine.widget.text.TextLine(&description, 0.8, engine.font.FontWeights.SEMIBOLD, description_color, 0, 1.2);
 const allocator = std.heap.page_allocator;
 
 // Internal functions
@@ -48,7 +50,8 @@ fn doCarousel() !void {
 // Lifecycle functions
 pub fn init() !void {
     // start our initial carousel timer
-    _ = try std.Thread.spawn(.{}, doCarousel, .{});
+    const carousel_thread = try std.Thread.spawn(.{}, doCarousel, .{});
+    carousel_thread.detach();
 }
 
 pub fn render() !void {

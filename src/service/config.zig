@@ -37,5 +37,5 @@ pub fn init() !void {
 
     // parse it
     config = (try std.json.parseFromSlice(Config, allocator, buffer, .{})).value;
-    engine.sdl.SDL_Log("Initialized config from disk");
+    std.log.info("initialized config from disk", .{});
 }
