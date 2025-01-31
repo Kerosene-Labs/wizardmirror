@@ -6,7 +6,8 @@
 	},
 	"runArgs": [
 		"--env=WAYLAND_DISPLAY=$WAYLAND_DISPLAY",
-		"--volume=/run/user/1000/wayland-0:/run/user/1000/wayland-0"
+		"--volume=/run/user/1000/wayland-0:/run/user/1000/wayland-0",
+		"--privileged",
 	],
 	"mounts": [
 		{

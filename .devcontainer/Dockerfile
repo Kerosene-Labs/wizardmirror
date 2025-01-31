@@ -40,9 +40,8 @@ RUN make install
 ### Devcontainer
 ###
 FROM mcr.microsoft.com/devcontainers/base:noble
-ENV XDG_RUNTIME_DIR=/run/user/1000
 RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev
-COPY --from=sdl-build /usr/local /usr/local
+COPY --from=sdl-build /usr /usr
 # RUN ln -s /usr/local/include/SDL3 /usr/include/SDL3 && ln -s /usr/local/include/SDL3_ttf /usr/include/SDL3_ttf
 # RUN ln -s /usr/local/lib/libSDL3.* /usr/lib/libSDL3.so
 # RUN ln -s /usr/local/lib/ 

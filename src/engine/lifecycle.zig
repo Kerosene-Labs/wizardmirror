@@ -29,7 +29,7 @@ pub fn run() !void {
     sdl_renderer = engine.sdl.SDL_CreateRenderer(sdl_window, "root");
     defer engine.sdl.SDL_DestroyRenderer(sdl_renderer);
 
-    var event: ?engine.sdl.SDL_Event = null;
+    const event: [*c]engine.sdl.SDL_Event = null;
     if (engine.sdl.SDL_RenderPresent(sdl_renderer)) {
         log.err("failed to render present: {s}", .{engine.sdl.SDL_GetError()});
         return errors.SDLError.RenderPresentFailed;
@@ -68,14 +68,17 @@ pub fn run() !void {
         allocator.free(null_term_slice);
 
         // handle events
-        while (engine.sdl.SDL_PollEvent(&event.?)) {
-            if (event.?.type == engine.sdl.SDL_EVENT_QUIT) {
+        while (engine.sdl.SDL_PollEvent(event)) {
+            if (event == null) {
+                continue;
+            }
+            if (event.*.type == engine.sdl.SDL_EVENT_QUIT) {
                 log.info("got kill signal, cleaning up", .{});
                 try component.deinitAll();
                 log.info("goodbye :)", .{});
                 return;
-            } else if (event.?.type == engine.sdl.SDL_EVENT_KEY_UP) {
-                const key: engine.sdl.SDL_Keycode = event.?.key.key;
+            } else if (event.*.type == engine.sdl.SDL_EVENT_KEY_UP) {
+                const key: engine.sdl.SDL_Keycode = event.*.key.key;
                 if (key == engine.sdl.SDLK_EQUALS or key == engine.sdl.SDLK_PLUS or key == engine.sdl.SDLK_KP_PLUS) {
                     engine.layout.base_font_size += 1;
                 } else if (key == engine.sdl.SDLK_MINUS or key == engine.sdl.SDLK_KP_MINUS) {
