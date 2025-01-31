@@ -10,7 +10,7 @@ pub const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a
 /// Represents the text the user is requesting
 const CacheKey = struct {
     text: []const u8,
-    font_size: engine.layout.Px,
+    font_size: engine.layout.FloatPx,
     font_weight: engine.font.FontWeight,
 };
 
@@ -19,7 +19,7 @@ const Renderable = struct {
     surface: *engine.sdl.SDL_Surface,
     texture: *engine.sdl.SDL_Texture,
     rect: *engine.sdl.SDL_Rect,
-    last_accessed: u32,
+    last_accessed: u64,
 
     fn deinit(self: @This()) !void {
         try allocator.free(self.rect);
@@ -32,7 +32,7 @@ const Renderable = struct {
 const TextContextHashMapContext = struct {
     pub fn hash(_: @This(), key: CacheKey) u64 {
         var hasher = std.hash.Wyhash.init(0);
-        const bit_font_size: u64 = @bitCast(key.font_size);
+        const bit_font_size: u32 = @bitCast(key.font_size);
         hasher.update(std.mem.asBytes(&bit_font_size));
         hasher.update(key.font_weight);
         hasher.update(key.text);
@@ -60,7 +60,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
             // set our text context
             const cache_key = CacheKey{
                 .text = text,
-                .font_size = engine.layout.getPixelsForRem(size),
+                .font_size = engine.layout.getFloatPixelsFromRem(size),
                 .font_weight = weight,
             };
 
@@ -73,7 +73,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = engine.sdl.TTF_RenderUTF8_Blended(try engine.font.getFont(size, weight), c_text, color);
+            const surface = engine.sdl.TTF_RenderText_Blended(try engine.font.getFont(size, weight), c_text, c_text.len, color);
             if (surface == null) {
                 std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
                 return engine.errors.SDLError.RenderTextFailed;
@@ -87,8 +87,8 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
 
             const rect = try allocator.create(engine.sdl.SDL_Rect);
             rect.* = engine.sdl.SDL_Rect{
-                .x = @intCast(engine.layout.getPixelsForRem(x)),
-                .y = @intCast(engine.layout.getPixelsForRem(y)),
+                .x = engine.layout.getPixelsForRem(x),
+                .y = engine.layout.getPixelsForRem(y),
                 .w = surface.*.w,
                 .h = surface.*.h,
             };
@@ -108,9 +108,9 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
         pub fn render() !void {
             const to_render = try getRenderable(text_store.get());
             if (to_render) |non_null_renderable| {
-                const err = engine.sdl.SDL_RenderCopy(engine.lifecycle.sdl_renderer, non_null_renderable.texture, null, non_null_renderable.rect);
+                const err = engine.sdl.SDL_RenderTexture(engine.lifecycle.sdl_renderer, non_null_renderable.texture, null, non_null_renderable.rect);
                 if (err != 0) {
-                    std.log.err("SDL Error: {s}", .{engine.sdl.SDL_GetError()});
+                    std.log.err("sdl error: {s}", .{engine.sdl.SDL_GetError()});
                     return engine.errors.SDLError.RenderCopyFailed;
                 }
             }

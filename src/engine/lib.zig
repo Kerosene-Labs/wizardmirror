@@ -1,7 +1,7 @@
 // exported modules
 pub const errors = @import("errors.zig");
 pub const sdl = @cImport({
-    @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("SDL3_ttf/SDL_ttf.h");
 });
 pub const state = @import("state.zig");
 pub const component = @import("component.zig");

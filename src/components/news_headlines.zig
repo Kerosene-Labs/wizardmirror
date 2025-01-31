@@ -2,6 +2,8 @@ const engine = @import("engine");
 const std = @import("std");
 const service = @import("service");
 
+const log = std.log.scoped(.component_news_headlines);
+
 const title_color = engine.widget.text.default_color;
 const description_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 128 };
 var carousel_timer: ?engine.sdl.SDL_TimerID = null;
@@ -15,12 +17,12 @@ const allocator = std.heap.page_allocator;
 fn doCarousel() !void {
     const config = service.config.get();
     var feed_content = std.ArrayList([]const u8).init(allocator);
-    for (config.rss_feeds) |feed| {
-        std.log.info("downloading rss feed: {s}", .{feed});
+    for (config.news_headlines.rss_feeds) |feed| {
+        log.info("downloading rss feed: {s}", .{feed});
         const response = try engine.http.get(allocator, feed);
         try feed_content.append(response.text);
     }
-    std.log.info("{d} rss feed(s) downloaded, showing headlines", .{config.rss_feeds.len});
+    log.info("{d} rss feed(s) downloaded, showing headlines", .{config.news_headlines.rss_feeds.len});
 
     // parse our feed content
     var headlines = std.ArrayList(service.rss.Item).init(allocator);

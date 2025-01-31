@@ -1,12 +1,19 @@
 const std = @import("std");
 const engine = @import("engine");
 
+const log = std.log.scoped(.service_config);
+
 const ConfigError = error{ ReadFailed, HomeEnvVarNotSet };
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-const Config = struct { rss_feeds: [][]const u8 };
+const Config = struct {
+    news_headlines: struct {
+        rss_feeds: [][]const u8,
+        carousel_slide_duration: u64,
+    },
+};
 var config: ?Config = null;
 
 // Get our home directory
@@ -36,6 +43,9 @@ pub fn init() !void {
     const buffer = try config_file.readToEndAlloc(allocator, std.math.maxInt(usize));
 
     // parse it
-    config = (try std.json.parseFromSlice(Config, allocator, buffer, .{})).value;
+    const parsed = std.json.parseFromSlice(Config, allocator, buffer, .{}) catch |err| {
+        std.debug.panic("failed to parse config json: {any}", .{err});
+    };
+    config = parsed.value;
     std.log.info("initialized config from disk", .{});
 }

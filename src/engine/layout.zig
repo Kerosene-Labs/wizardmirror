@@ -1,13 +1,16 @@
 const std = @import("std");
 const engine = @import("lib.zig");
 
-pub const Rem = f64;
-pub const RemStr = []const u8;
-pub const Px = u64;
+const log = std.log.scoped(.engine_layout);
 
-pub var base_font_size: Px = 16;
-pub var dpi_font_scale_factor: Px = 0;
-pub var root_font_size: Px = 0;
+pub const Rem = f32;
+pub const RemStr = []const u8;
+pub const FloatPx = f32;
+pub const IntegerPx = i32;
+
+pub var base_font_size: FloatPx = 16;
+pub var dpi_font_scale_factor: FloatPx = 0;
+pub var root_font_size: FloatPx = 0;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -27,10 +30,14 @@ pub fn scaleRootFontSize() !void {
 }
 
 /// Get how many pixels the given rem value should be;
-pub fn getPixelsForRem(rem: Rem) Px {
-    const px_float: f64 = @floatFromInt(root_font_size);
-    const x: Px = @intFromFloat(@round(rem * px_float));
+pub fn getPixelsForRem(rem: Rem) IntegerPx {
+    const x: IntegerPx = @intFromFloat(@round(rem * root_font_size));
     return x;
+}
+
+/// Get how many pixels the given Rem value should be, as a float.
+pub fn getFloatPixelsFromRem(rem: Rem) FloatPx {
+    return rem * root_font_size;
 }
 
 /// Helper to convert a Rem to a RemStr, which is a string representation of the underlying f64

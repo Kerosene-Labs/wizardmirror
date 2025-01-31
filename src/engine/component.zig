@@ -2,24 +2,31 @@ const engine = @import("lib.zig");
 const errors = @import("errors.zig");
 const std = @import("std");
 
+const log = std.log.scoped(.engine_component);
+
 var registry = std.ArrayList(Component).init(std.heap.page_allocator);
+
+// our lifecycle functions
+pub const InitLifecycleFn = *const fn () anyerror!void;
+pub const RenderLifecycleFn = *const fn () anyerror!void;
+pub const DeinitLifecycleFn = *const fn () anyerror!void;
 
 /// A wrapper on top of the actual components. Contains handy pointers to our lifecycle objects.
 pub const Component = struct {
     name: []const u8,
-    init_ptr: *const fn () anyerror!void,
-    render_ptr: *const fn () anyerror!void,
-    deinit_ptr: *const fn () anyerror!void,
+    init_ptr: InitLifecycleFn,
+    render_ptr: RenderLifecycleFn,
+    deinit_ptr: DeinitLifecycleFn,
 };
 
 /// Register a component.
 pub fn register(
     name: []const u8,
-    init: *const fn () anyerror!void,
-    render: *const fn () anyerror!void,
-    deinit: *const fn () anyerror!void,
+    init: InitLifecycleFn,
+    render: RenderLifecycleFn,
+    deinit: DeinitLifecycleFn,
 ) !void {
-    std.log.info("registered component '{s}'", .{name});
+    log.info("registered component '{s}'", .{name});
     try registry.append(Component{
         .name = name,
         .init_ptr = init,
@@ -30,12 +37,12 @@ pub fn register(
 
 /// Iterate over all components, initialize them
 pub fn initAll() !void {
-    std.log.info("beginning initialization of components", .{});
+    log.info("beginning initialization of components", .{});
     for (registry.items) |component| {
-        std.log.info(" - '{s}' : calling init()", .{component.name});
+        log.info(" - '{s}' : calling init()", .{component.name});
         try component.init_ptr();
     }
-    std.log.info("component initialization complete", .{});
+    log.info("component initialization complete", .{});
 }
 
 /// Iterate over all components, render them
@@ -47,10 +54,10 @@ pub fn renderAll() !void {
 
 /// Iterate over all components, render them
 pub fn deinitAll() !void {
-    std.log.info("beginning de-initialization of components", .{});
+    log.info("beginning de-initialization of components", .{});
     for (registry.items) |component| {
-        std.log.info(" - '{s}' - deinitializing", .{component.name});
+        log.info(" - '{s}' - deinitializing", .{component.name});
         try component.deinit_ptr();
     }
-    std.log.info("beginning de-initialization of components", .{});
+    log.info("beginning de-initialization of components", .{});
 }

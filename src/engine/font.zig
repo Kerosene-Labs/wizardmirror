@@ -1,6 +1,7 @@
 const std = @import("std");
 const engine = @import("lib.zig");
 
+const log = std.log.scoped(.engine_font);
 const allocator = std.heap.page_allocator;
 
 pub const FontWeight = []const u8;
@@ -14,14 +15,14 @@ pub const FontWeights = struct {
 /// This is useful for when our scaling factors change, as they don't directly affect rem.
 pub const FontRemPxMap = struct {
     rem: engine.layout.Rem,
-    px: engine.layout.Px,
+    px: engine.layout.FloatPx,
     weight: FontWeight,
 };
 
 /// HashMap Context
 const FontRemPxMapKeyContext = struct {
     pub fn hash(_: @This(), key: FontRemPxMap) u64 {
-        const rem_bits: u64 = @bitCast(key.rem);
+        const rem_bits: u32 = @bitCast(key.rem);
         var hasher = std.hash.Wyhash.init(0);
         hasher.update(std.mem.asBytes(&rem_bits));
         hasher.update(std.fmt.allocPrint(allocator, "{d}", .{key.px}) catch |err| {
@@ -42,7 +43,7 @@ pub fn getFont(requested_rem: engine.layout.Rem, weight: FontWeight) !*engine.sd
     // create our key, get our potential cache hit
     const key = FontRemPxMap{
         .rem = requested_rem,
-        .px = engine.layout.getPixelsForRem(requested_rem),
+        .px = engine.layout.getFloatPixelsFromRem(requested_rem),
         .weight = weight,
     };
     var cached = font_cache.get(key);
@@ -50,7 +51,7 @@ pub fn getFont(requested_rem: engine.layout.Rem, weight: FontWeight) !*engine.sd
     // if we're not cached, open the font and cache it
     if (cached == null) {
         const font_name = try std.fmt.allocPrintZ(allocator, "/usr/share/fonts/open-sans/OpenSans-{s}.ttf", .{weight});
-        cached = engine.sdl.TTF_OpenFont(font_name, @intCast(engine.layout.getPixelsForRem(requested_rem)));
+        cached = engine.sdl.TTF_OpenFont(font_name, engine.layout.getFloatPixelsFromRem(requested_rem));
         if (cached == null) {
             std.debug.panic("{s}", .{try std.fmt.allocPrint(allocator, "failed to open font: {s}", .{engine.sdl.SDL_GetError()})});
         }

@@ -5,6 +5,8 @@ const std = @import("std");
 const errors = @import("errors.zig");
 const engine = @import("lib.zig");
 
+const log = std.log.scoped(.engine_http);
+
 /// Python `requests` inspired response object
 const Response = struct {
     allocator: std.mem.Allocator,
@@ -44,6 +46,7 @@ fn getHandle(url: []const u8, response: *Response) ?*curl.CURL {
     const handle = curl.curl_easy_init();
     if (handle) |non_null_handle| {
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_URL, url.ptr);
+        _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_FOLLOWLOCATION, @as(c_long, 1));
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_WRITEFUNCTION, writeCallback);
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_WRITEDATA, response);
         _ = curl.curl_easy_setopt(non_null_handle, curl.CURLOPT_HTTP_VERSION, curl.CURL_HTTP_VERSION_NONE);
