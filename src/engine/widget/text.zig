@@ -108,8 +108,12 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
         pub fn render() !void {
             const to_render = try getRenderable(text_store.get());
             if (to_render) |non_null_renderable| {
-                const err = engine.sdl.SDL_RenderTexture(engine.lifecycle.sdl_renderer, non_null_renderable.texture, null, non_null_renderable.rect);
-                if (err != 0) {
+                if (engine.sdl.SDL_RenderTexture(
+                    engine.lifecycle.sdl_renderer,
+                    non_null_renderable.texture,
+                    null,
+                    @ptrCast(non_null_renderable.rect),
+                )) {
                     std.log.err("sdl error: {s}", .{engine.sdl.SDL_GetError()});
                     return engine.errors.SDLError.RenderCopyFailed;
                 }

@@ -74,8 +74,8 @@ pub fn run() !void {
                 try component.deinitAll();
                 log.info("goodbye :)", .{});
                 return;
-            } else if (event.?.type == engine.sdl.SDL_KEYUP) {
-                const key: engine.sdl.SDL_Keycode = event.?.key.keysym.sym;
+            } else if (event.?.type == engine.sdl.SDL_EVENT_KEY_UP) {
+                const key: engine.sdl.SDL_Keycode = event.?.key.key;
                 if (key == engine.sdl.SDLK_EQUALS or key == engine.sdl.SDLK_PLUS or key == engine.sdl.SDLK_KP_PLUS) {
                     engine.layout.base_font_size += 1;
                 } else if (key == engine.sdl.SDLK_MINUS or key == engine.sdl.SDLK_KP_MINUS) {
@@ -101,6 +101,9 @@ pub fn run() !void {
 
         // render the components
         try component.renderAll();
-        engine.sdl.SDL_RenderPresent(sdl_renderer);
+        if (!engine.sdl.SDL_RenderPresent(sdl_renderer)) {
+            log.err("failed to clear renderer: {s}", .{engine.sdl.SDL_GetError()});
+            return errors.SDLError.Unknown;
+        }
     }
 }

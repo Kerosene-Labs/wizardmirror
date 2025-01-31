@@ -17,15 +17,6 @@ const allocator = gpa.allocator();
 
 /// Called every frame, scales our root font size
 pub fn scaleRootFontSize() !void {
-    var ddpi: f32 = 0;
-    var hdpi: f32 = 0;
-    var vdpi: f32 = 0;
-    const display_index = engine.sdl.SDL_GetWindowDisplayIndex(engine.lifecycle.sdl_window);
-    _ = engine.sdl.SDL_GetDisplayDPI(display_index, &ddpi, &hdpi, &vdpi);
-    if (vdpi >= 200) {
-        dpi_font_scale_factor = 8;
-    }
-
     root_font_size = base_font_size + dpi_font_scale_factor;
 }
 

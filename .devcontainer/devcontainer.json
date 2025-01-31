@@ -8,6 +8,18 @@
 		"--env=WAYLAND_DISPLAY=$WAYLAND_DISPLAY",
 		"--volume=/run/user/1000/wayland-0:/run/user/1000/wayland-0"
 	],
+	"mounts": [
+		{
+			"source": "${localEnv:HOME}/.ssh",
+			"target": "/home/vscode/.ssh",
+			"type": "bind"
+		},
+		{
+			"source": "${localEnv:HOME}/.gitconfig",
+			"target": "/home/vscode/.gitconfig",
+			"type": "bind"
+		}
+	],
 	"features": {
 		"ghcr.io/devcontainers-extra/features/zig": {"version": "0.13.0"}
 	},
