@@ -19,9 +19,10 @@ RUN git clone https://github.com/libsdl-org/SDL.git
 WORKDIR /tmp/SDL3/SDL
 RUN mkdir build
 WORKDIR /tmp/SDL3/SDL/build
-RUN cmake ..
+RUN cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 RUN make -j$(nproc)
 RUN make install
+# RUN ls /usr/local/lib && exit 1
 
 
 # compile SDL3_ttf
@@ -31,7 +32,7 @@ RUN git clone https://github.com/libsdl-org/SDL_ttf.git
 WORKDIR /tmp/SDL3_ttf/SDL_ttf
 RUN mkdir build
 WORKDIR /tmp/SDL3_ttf/SDL_ttf/build
-RUN cmake ..
+RUN cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 RUN make -j$(nproc)
 RUN make install
 
@@ -42,6 +43,8 @@ FROM mcr.microsoft.com/devcontainers/base:noble
 ENV XDG_RUNTIME_DIR=/run/user/1000
 RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev
 COPY --from=sdl-build /usr/local /usr/local
-RUN ln -s /usr/local/include/SDL3 /usr/include/SDL3 && ln -s /usr/local/include/SDL3_ttf /usr/include/SDL3_ttf
+# RUN ln -s /usr/local/include/SDL3 /usr/include/SDL3 && ln -s /usr/local/include/SDL3_ttf /usr/include/SDL3_ttf
+# RUN ln -s /usr/local/lib/libSDL3.* /usr/lib/libSDL3.so
+# RUN ln -s /usr/local/lib/ 
 RUN ln -s /usr/include/libxml2/libxml /usr/include/libxml
 ENTRYPOINT ["cat", "/dev/null"]
