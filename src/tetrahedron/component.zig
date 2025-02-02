@@ -2,7 +2,7 @@ const tetrahedron = @import("root.zig");
 const errors = @import("errors.zig");
 const std = @import("std");
 
-const log = std.log.scoped(.engine_component);
+const log = std.log.scoped(.tetrahedron_component);
 
 var registry = std.ArrayList(Component).init(std.heap.page_allocator);
 

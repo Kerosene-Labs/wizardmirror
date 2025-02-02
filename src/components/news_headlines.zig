@@ -10,8 +10,6 @@ var carousel_timer: ?tetrahedron.sdl.SDL_TimerID = null;
 var title = tetrahedron.state.StringStore.init("...");
 var description = tetrahedron.state.StringStore.init("");
 
-var test_store = tetrahedron.state.StringStore.init("");
-const test_text = tetrahedron.widget.text.TextLine(&test_store, 1.0, tetrahedron.font.FontWeights.SEMIBOLD, title_color, 0, 1);
 const title_text = tetrahedron.widget.text.TextLine(&title, 1.0, tetrahedron.font.FontWeights.BOLD, title_color, 0, 1);
 const description_text = tetrahedron.widget.text.TextLine(&description, 0.8, tetrahedron.font.FontWeights.SEMIBOLD, description_color, 0, 1);
 const allocator = std.heap.page_allocator;
@@ -20,12 +18,12 @@ const allocator = std.heap.page_allocator;
 fn doCarousel() !void {
     const config = service.config.get();
     var feed_content = std.ArrayList([]const u8).init(allocator);
-    for (config.news_headlines.rss_feeds) |feed| {
+    for (config.components.news_headlines.rss_feeds) |feed| {
         log.info("downloading rss feed: {s}", .{feed});
         const response = try tetrahedron.http.get(allocator, feed);
         try feed_content.append(response.text);
     }
-    log.info("{d} rss feed(s) downloaded, showing headlines", .{config.news_headlines.rss_feeds.len});
+    log.info("{d} rss feed(s) downloaded, showing headlines", .{config.components.news_headlines.rss_feeds.len});
 
     // parse our feed content
     var headlines = std.ArrayList(service.rss.Item).init(allocator);
@@ -60,9 +58,37 @@ pub fn init() !void {
 }
 
 pub fn render() !void {
-    try test_text.render();
-    try title_text.render();
-    try description_text.render();
+    const text = "No render";
+    const font = tetrahedron.sdl.TTF_OpenFont("/usr/share/fonts/truetype/open-sans/OpenSans-Bold.ttf", 16);
+    if (font == null) {
+        std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+        return tetrahedron.errors.SDLError.Unknown;
+    }
+    const surface = tetrahedron.sdl.TTF_RenderText_Solid(font, text, text.len, tetrahedron.widget.text.default_color);
+    if (surface == null) {
+        std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+        return tetrahedron.errors.SDLError.RenderTextFailed;
+    }
+
+    const texture = tetrahedron.sdl.SDL_CreateTextureFromSurface(tetrahedron.lifecycle.sdl_renderer, surface);
+    if (texture == null) {
+        std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+        return tetrahedron.errors.SDLError.CreateTextureFromSurfaceFailed;
+    }
+
+    const rect = tetrahedron.sdl.SDL_Rect{
+        .x = 0,
+        .y = 0,
+        .w = surface.*.w,
+        .h = surface.*.h,
+    };
+
+    if (!tetrahedron.sdl.SDL_RenderTexture(tetrahedron.lifecycle.sdl_renderer, texture, null, @ptrCast(&rect))) {
+        std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+        return tetrahedron.errors.SDLError.Unknown;
+    }
+    // try title_text.render();
+    // try description_text.render();
 }
 
 pub fn deinit() !void {}

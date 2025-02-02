@@ -5,7 +5,7 @@ const std = @import("std");
 const errors = @import("errors.zig");
 const tetrahedron = @import("root.zig");
 
-const log = std.log.scoped(.engine_http);
+const log = std.log.scoped(.tetrahedron_http);
 
 /// Python `requests` inspired response object
 const Response = struct {

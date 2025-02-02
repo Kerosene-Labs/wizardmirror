@@ -2,7 +2,7 @@ const std = @import("std");
 const errors = @import("errors.zig");
 const allocator = std.heap.page_allocator;
 
-const log = std.log.scoped(.engine_state);
+const log = std.log.scoped(.tetrahedron_state);
 
 // pre-mades
 pub const StringStore = Store([]const u8);

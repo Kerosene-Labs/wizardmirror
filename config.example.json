@@ -1,6 +1,14 @@
 {
-  "news_headlines": {
-    "rss_feeds": ["http://rss.cnn.com/rss/cnn_topstories.rss"],
-    "carousel_slide_duration": 4
+  "fonts": {
+    "paths": {
+      "bold": "res/fonts/open-sans/OpenSans-Bold.ttf",
+      "semibold": "res/fonts/open-sans/OpenSans-Semibold.ttf"
+    }
+  },
+  "components": {
+    "news_headlines": {
+      "rss_feeds": ["http://rss.cnn.com/rss/cnn_topstories.rss"],
+      "carousel_slide_duration": 4
+    }
   }
 }

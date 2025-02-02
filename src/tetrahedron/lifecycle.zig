@@ -3,7 +3,7 @@ const errors = @import("errors.zig");
 const component = @import("component.zig");
 const std = @import("std");
 
-const log = std.log.scoped(.engine_lifecycle);
+const log = std.log.scoped(.tetrahedron_lifecycle);
 
 pub var sdl_renderer: ?*tetrahedron.sdl.SDL_Renderer = null;
 pub var sdl_window: ?*tetrahedron.sdl.SDL_Window = null;

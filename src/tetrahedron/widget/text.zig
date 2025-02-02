@@ -7,13 +7,6 @@ const allocator = gpa.allocator();
 
 pub const default_color = tetrahedron.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
 
-/// Represents the text the user is requesting
-const CacheKey = struct {
-    text: []const u8,
-    font_size: tetrahedron.layout.FloatPx,
-    font_weight: tetrahedron.font.FontWeight,
-};
-
 /// Represents a cacheable group of a surface, texture and rect.
 const Renderable = struct {
     surface: *tetrahedron.sdl.SDL_Surface,
@@ -28,24 +21,6 @@ const Renderable = struct {
     }
 };
 
-/// HashMap Context
-const TextContextHashMapContext = struct {
-    pub fn hash(_: @This(), key: CacheKey) u64 {
-        var hasher = std.hash.Wyhash.init(0);
-        const bit_font_size: u32 = @bitCast(key.font_size);
-        hasher.update(std.mem.asBytes(&bit_font_size));
-        hasher.update(key.font_weight);
-        hasher.update(key.text);
-        return hasher.final();
-    }
-
-    pub fn eql(_: @This(), a: CacheKey, b: CacheKey) bool {
-        return a.font_size == b.font_size and std.mem.eql(u8, a.font_weight, b.font_weight) and std.mem.eql(u8, a.text, b.text);
-    }
-};
-
-var cache = std.HashMap(CacheKey, *Renderable, TextContextHashMapContext, std.hash_map.default_max_load_percentage).init(allocator);
-
 /// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
 pub fn TextLine(text_store: *tetrahedron.state.StringStore, size: tetrahedron.layout.Rem, weight: tetrahedron.font.FontWeight, color: tetrahedron.sdl.SDL_Color, x: tetrahedron.layout.Rem, y: tetrahedron.layout.Rem) type {
@@ -57,23 +32,10 @@ pub fn TextLine(text_store: *tetrahedron.state.StringStore, size: tetrahedron.la
                 return null;
             }
 
-            // set our text context
-            const cache_key = CacheKey{
-                .text = text,
-                .font_size = tetrahedron.layout.getFloatPixelsFromRem(size),
-                .font_weight = weight,
-            };
-
-            // get our cache candidate, ensure its valid
-            const candidate = cache.get(cache_key);
-            if (candidate != null and (tetrahedron.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
-                return candidate.?;
-            }
-
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = tetrahedron.sdl.TTF_RenderText_Blended_Wrapped(try tetrahedron.font.getFont(size, weight), c_text, 0, color, 400);
+            const surface = tetrahedron.sdl.TTF_RenderText_Solid(try tetrahedron.font.getFont(size, weight), c_text, c_text.len, color);
             if (surface == null) {
                 std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
                 return tetrahedron.errors.SDLError.RenderTextFailed;
@@ -101,7 +63,6 @@ pub fn TextLine(text_store: *tetrahedron.state.StringStore, size: tetrahedron.la
                 .rect = rect,
                 .last_accessed = tetrahedron.sdl.SDL_GetTicks(),
             };
-            try cache.put(cache_key, pair);
             return pair;
         }
 

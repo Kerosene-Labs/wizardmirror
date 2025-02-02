@@ -1,7 +1,7 @@
 const std = @import("std");
 const tetrahedron = @import("root.zig");
 
-const log = std.log.scoped(.engine_layout);
+const log = std.log.scoped(.tetrahedron_layout);
 
 pub const Rem = f32;
 pub const RemStr = []const u8;

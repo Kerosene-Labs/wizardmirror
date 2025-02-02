@@ -27,7 +27,7 @@ RUN make install
 # compile SDL3_ttf
 RUN mkdir /tmp/SDL3_ttf
 WORKDIR /tmp/SDL3_ttf
-RUN git clone https://github.com/libsdl-org/SDL_ttf.git
+RUN git clone --branch=preview-3.1.0 https://github.com/libsdl-org/SDL_ttf.git
 WORKDIR /tmp/SDL3_ttf/SDL_ttf
 RUN mkdir build
 WORKDIR /tmp/SDL3_ttf/SDL_ttf/build
@@ -52,7 +52,8 @@ RUN mv ${ZIG_VERSION}/* /opt/zig
 ### Devcontainer
 ###
 FROM mcr.microsoft.com/devcontainers/base:noble
-RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev
+RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev fonts-open-sans libfreetype-dev libfreetype6 \
+    libharfbuzz0b
 COPY --from=sdl-build /usr /usr
 COPY --from=zig-install /opt/zig /opt/zig
 COPY fonts/ /usr/share/fonts/

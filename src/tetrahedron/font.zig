@@ -1,7 +1,7 @@
 const std = @import("std");
 const tetrahedron = @import("root.zig");
 
-const log = std.log.scoped(.engine_font);
+const log = std.log.scoped(.tetrahedron_font);
 const allocator = std.heap.page_allocator;
 
 pub const FontWeight = []const u8;
@@ -51,7 +51,7 @@ pub fn getFont(requested_rem: tetrahedron.layout.Rem, weight: FontWeight) !*tetr
     // if we're not cached, open the font and cache it
     if (cached == null) {
         const font_name = try std.fmt.allocPrintZ(allocator, "/usr/share/fonts/open-sans/OpenSans-{s}.ttf", .{weight});
-        cached = tetrahedron.sdl.TTF_OpenFont(font_name, tetrahedron.layout.getFloatPixelsFromRem(requested_rem));
+        cached = tetrahedron.sdl.TTF_OpenFont(font_name, 16);
         if (cached == null) {
             std.debug.panic("{s}", .{try std.fmt.allocPrint(allocator, "failed to open font: {s}", .{tetrahedron.sdl.SDL_GetError()})});
         }
