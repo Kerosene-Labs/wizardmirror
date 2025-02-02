@@ -64,16 +64,10 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
                 .font_weight = weight,
             };
 
-            // get our cache candidate, ensure its valid
-            const candidate = cache.get(cache_key);
-            if (candidate != null and (engine.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
-                return candidate.?;
-            }
-
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = engine.sdl.TTF_RenderText_Blended(try engine.font.getFont(size, weight), c_text, c_text.len, color);
+            const surface = engine.sdl.TTF_RenderText_Blended_Wrapped(try engine.font.getFont(size, weight), c_text, 0, color, 400);
             if (surface == null) {
                 std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
                 return engine.errors.SDLError.RenderTextFailed;
@@ -87,8 +81,8 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
 
             const rect = try allocator.create(engine.sdl.SDL_Rect);
             rect.* = engine.sdl.SDL_Rect{
-                .x = engine.layout.getPixelsForRem(x),
-                .y = engine.layout.getPixelsForRem(y),
+                .x = x,
+                .y = y,
                 .w = surface.*.w,
                 .h = surface.*.h,
             };

@@ -7,7 +7,7 @@ const allocator = std.heap.page_allocator;
 pub const FontWeight = []const u8;
 pub const FontWeights = struct {
     pub const REGULAR = "Regular";
-    pub const SEMIBOLD = "Semibold";
+    pub const SEMIBOLD = "SemiBold";
     pub const BOLD = "Bold";
 };
 
