@@ -4,12 +4,20 @@
 		"context": ".",
 		"dockerfile": "Dockerfile"
 	},
+	"containerEnv": {
+		"XDG_RUNTIME_DIR": "/run/user/${localEnv:UID}",
+		"WAYLAND_DISPLAY": "wayland-0",
+		"SDL_VIDEODRIVER": "wayland"
+	},
 	"runArgs": [
-		"--env=WAYLAND_DISPLAY=$WAYLAND_DISPLAY",
-		"--volume=/run/user/1000/wayland-0:/run/user/1000/wayland-0",
-		"--privileged",
+		"--privileged"
 	],
 	"mounts": [
+		{
+			"source": "/run/user/${localEnv:UID}/wayland-0",
+			"target": "/run/user/${localEnv:UID}/wayland-0",
+			"type": "bind"
+		},
 		{
 			"source": "${localEnv:HOME}/.ssh",
 			"target": "/home/vscode/.ssh",
@@ -21,13 +29,13 @@
 			"type": "bind"
 		}
 	],
-	"features": {
-		"ghcr.io/devcontainers-extra/features/zig": {"version": "0.13.0"}
-	},
+	"postCreateCommand": "mkdir /home/vscode/.config/wizardmirror && cp /workspaces/wizardmirror/config.example.json /home/vscode/.config/wizardmirror/config.json",
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ziglang.vscode-zig"
+				"ziglang.vscode-zig",
+				"ms-vscode.makefile-tools",
+				"ms-azuretools.vscode-docker"
 			]
 		}
 	}

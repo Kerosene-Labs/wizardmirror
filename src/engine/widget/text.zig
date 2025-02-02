@@ -108,7 +108,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
         pub fn render() !void {
             const to_render = try getRenderable(text_store.get());
             if (to_render) |non_null_renderable| {
-                if (engine.sdl.SDL_RenderTexture(
+                if (!engine.sdl.SDL_RenderTexture(
                     engine.lifecycle.sdl_renderer,
                     non_null_renderable.texture,
                     null,

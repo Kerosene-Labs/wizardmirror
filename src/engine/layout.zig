@@ -10,25 +10,19 @@ pub const IntegerPx = i32;
 
 pub var base_font_size: FloatPx = 16;
 pub var dpi_font_scale_factor: FloatPx = 0;
-pub var root_font_size: FloatPx = 0;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-/// Called every frame, scales our root font size
-pub fn scaleRootFontSize() !void {
-    root_font_size = base_font_size + dpi_font_scale_factor;
-}
-
 /// Get how many pixels the given rem value should be;
 pub fn getPixelsForRem(rem: Rem) IntegerPx {
-    const x: IntegerPx = @intFromFloat(@round(rem * root_font_size));
+    const x: IntegerPx = @intFromFloat(@round(rem * base_font_size));
     return x;
 }
 
 /// Get how many pixels the given Rem value should be, as a float.
 pub fn getFloatPixelsFromRem(rem: Rem) FloatPx {
-    return rem * root_font_size;
+    return rem * base_font_size;
 }
 
 /// Helper to convert a Rem to a RemStr, which is a string representation of the underlying f64
