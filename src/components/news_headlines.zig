@@ -1,19 +1,19 @@
-const engine = @import("engine");
+const tetrahedron = @import("tetrahedron");
 const std = @import("std");
 const service = @import("service");
 
 const log = std.log.scoped(.component_news_headlines);
 
-const title_color = engine.widget.text.default_color;
-const description_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 128 };
-var carousel_timer: ?engine.sdl.SDL_TimerID = null;
-var title = engine.state.StringStore.init("...");
-var description = engine.state.StringStore.init("");
+const title_color = tetrahedron.widget.text.default_color;
+const description_color = tetrahedron.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 128 };
+var carousel_timer: ?tetrahedron.sdl.SDL_TimerID = null;
+var title = tetrahedron.state.StringStore.init("...");
+var description = tetrahedron.state.StringStore.init("");
 
-var test_store = engine.state.StringStore.init("");
-const test_text = engine.widget.text.TextLine(&test_store, 1.0, engine.font.FontWeights.SEMIBOLD, title_color, 0, 1);
-const title_text = engine.widget.text.TextLine(&title, 1.0, engine.font.FontWeights.BOLD, title_color, 0, 1);
-const description_text = engine.widget.text.TextLine(&description, 0.8, engine.font.FontWeights.SEMIBOLD, description_color, 0, 1);
+var test_store = tetrahedron.state.StringStore.init("");
+const test_text = tetrahedron.widget.text.TextLine(&test_store, 1.0, tetrahedron.font.FontWeights.SEMIBOLD, title_color, 0, 1);
+const title_text = tetrahedron.widget.text.TextLine(&title, 1.0, tetrahedron.font.FontWeights.BOLD, title_color, 0, 1);
+const description_text = tetrahedron.widget.text.TextLine(&description, 0.8, tetrahedron.font.FontWeights.SEMIBOLD, description_color, 0, 1);
 const allocator = std.heap.page_allocator;
 
 // Internal functions
@@ -22,7 +22,7 @@ fn doCarousel() !void {
     var feed_content = std.ArrayList([]const u8).init(allocator);
     for (config.news_headlines.rss_feeds) |feed| {
         log.info("downloading rss feed: {s}", .{feed});
-        const response = try engine.http.get(allocator, feed);
+        const response = try tetrahedron.http.get(allocator, feed);
         try feed_content.append(response.text);
     }
     log.info("{d} rss feed(s) downloaded, showing headlines", .{config.news_headlines.rss_feeds.len});

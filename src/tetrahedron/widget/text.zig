@@ -1,30 +1,30 @@
 const component = @import("../component.zig");
-const engine = @import("../lib.zig");
+const tetrahedron = @import("../root.zig");
 const std = @import("std");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-pub const default_color = engine.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+pub const default_color = tetrahedron.sdl.SDL_Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
 
 /// Represents the text the user is requesting
 const CacheKey = struct {
     text: []const u8,
-    font_size: engine.layout.FloatPx,
-    font_weight: engine.font.FontWeight,
+    font_size: tetrahedron.layout.FloatPx,
+    font_weight: tetrahedron.font.FontWeight,
 };
 
 /// Represents a cacheable group of a surface, texture and rect.
 const Renderable = struct {
-    surface: *engine.sdl.SDL_Surface,
-    texture: *engine.sdl.SDL_Texture,
-    rect: *engine.sdl.SDL_Rect,
+    surface: *tetrahedron.sdl.SDL_Surface,
+    texture: *tetrahedron.sdl.SDL_Texture,
+    rect: *tetrahedron.sdl.SDL_Rect,
     last_accessed: u64,
 
     fn deinit(self: @This()) !void {
         try allocator.free(self.rect);
-        engine.sdl.SDL_FreeSurface(self.surface);
-        engine.sdl.SDL_DestroyTexture(self.texture);
+        tetrahedron.sdl.SDL_FreeSurface(self.surface);
+        tetrahedron.sdl.SDL_DestroyTexture(self.texture);
     }
 };
 
@@ -48,7 +48,7 @@ var cache = std.HashMap(CacheKey, *Renderable, TextContextHashMapContext, std.ha
 
 /// Pre-made text rendering component. Lazy caching mechanism for surfaces, textures and rects.
 /// Automatically subscribes to the given `StringStore`.
-pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, weight: engine.font.FontWeight, color: engine.sdl.SDL_Color, x: engine.layout.Rem, y: engine.layout.Rem) type {
+pub fn TextLine(text_store: *tetrahedron.state.StringStore, size: tetrahedron.layout.Rem, weight: tetrahedron.font.FontWeight, color: tetrahedron.sdl.SDL_Color, x: tetrahedron.layout.Rem, y: tetrahedron.layout.Rem) type {
     const _type = struct {
         /// A renderable in this context is the shared set of all SDL objects we need to make this appear on screen
         fn getRenderable(text: []const u8) !?*Renderable {
@@ -60,27 +60,33 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
             // set our text context
             const cache_key = CacheKey{
                 .text = text,
-                .font_size = engine.layout.getFloatPixelsFromRem(size),
+                .font_size = tetrahedron.layout.getFloatPixelsFromRem(size),
                 .font_weight = weight,
             };
+
+            // get our cache candidate, ensure its valid
+            const candidate = cache.get(cache_key);
+            if (candidate != null and (tetrahedron.sdl.SDL_GetTicks() - candidate.?.last_accessed) <= 5_000) {
+                return candidate.?;
+            }
 
             const c_text = try allocator.dupeZ(u8, text);
             defer allocator.free(c_text);
 
-            const surface = engine.sdl.TTF_RenderText_Blended_Wrapped(try engine.font.getFont(size, weight), c_text, 0, color, 400);
+            const surface = tetrahedron.sdl.TTF_RenderText_Blended_Wrapped(try tetrahedron.font.getFont(size, weight), c_text, 0, color, 400);
             if (surface == null) {
-                std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
-                return engine.errors.SDLError.RenderTextFailed;
+                std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+                return tetrahedron.errors.SDLError.RenderTextFailed;
             }
 
-            const texture = engine.sdl.SDL_CreateTextureFromSurface(engine.lifecycle.sdl_renderer, surface);
+            const texture = tetrahedron.sdl.SDL_CreateTextureFromSurface(tetrahedron.lifecycle.sdl_renderer, surface);
             if (texture == null) {
-                std.log.err("failed to render text: {s}", .{engine.sdl.SDL_GetError()});
-                return engine.errors.SDLError.CreateTextureFromSurfaceFailed;
+                std.log.err("failed to render text: {s}", .{tetrahedron.sdl.SDL_GetError()});
+                return tetrahedron.errors.SDLError.CreateTextureFromSurfaceFailed;
             }
 
-            const rect = try allocator.create(engine.sdl.SDL_Rect);
-            rect.* = engine.sdl.SDL_Rect{
+            const rect = try allocator.create(tetrahedron.sdl.SDL_Rect);
+            rect.* = tetrahedron.sdl.SDL_Rect{
                 .x = x,
                 .y = y,
                 .w = surface.*.w,
@@ -93,7 +99,7 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
                 .surface = surface,
                 .texture = texture.?,
                 .rect = rect,
-                .last_accessed = engine.sdl.SDL_GetTicks(),
+                .last_accessed = tetrahedron.sdl.SDL_GetTicks(),
             };
             try cache.put(cache_key, pair);
             return pair;
@@ -102,14 +108,14 @@ pub fn TextLine(text_store: *engine.state.StringStore, size: engine.layout.Rem, 
         pub fn render() !void {
             const to_render = try getRenderable(text_store.get());
             if (to_render) |non_null_renderable| {
-                if (!engine.sdl.SDL_RenderTexture(
-                    engine.lifecycle.sdl_renderer,
+                if (!tetrahedron.sdl.SDL_RenderTexture(
+                    tetrahedron.lifecycle.sdl_renderer,
                     non_null_renderable.texture,
                     null,
                     @ptrCast(non_null_renderable.rect),
                 )) {
-                    std.log.err("sdl error: {s}", .{engine.sdl.SDL_GetError()});
-                    return engine.errors.SDLError.RenderCopyFailed;
+                    std.log.err("sdl error: {s}", .{tetrahedron.sdl.SDL_GetError()});
+                    return tetrahedron.errors.SDLError.RenderCopyFailed;
                 }
             }
         }

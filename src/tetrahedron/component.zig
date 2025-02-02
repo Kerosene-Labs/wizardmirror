@@ -1,4 +1,4 @@
-const engine = @import("lib.zig");
+const tetrahedron = @import("root.zig");
 const errors = @import("errors.zig");
 const std = @import("std");
 

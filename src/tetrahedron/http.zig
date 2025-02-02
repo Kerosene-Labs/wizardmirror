@@ -3,7 +3,7 @@ pub const curl = @cImport({
 });
 const std = @import("std");
 const errors = @import("errors.zig");
-const engine = @import("lib.zig");
+const tetrahedron = @import("root.zig");
 
 const log = std.log.scoped(.engine_http);
 

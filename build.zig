@@ -24,25 +24,25 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const engine = b.createModule(.{
-        .root_source_file = b.path("src/engine/lib.zig"),
+    const tetrahedron = b.createModule(.{
+        .root_source_file = b.path("src/tetrahedron/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     const service = b.createModule(.{
-        .root_source_file = b.path("src/service/lib.zig"),
+        .root_source_file = b.path("src/service/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    service.addImport("engine", engine);
+    service.addImport("tetrahedron", tetrahedron);
 
     const components = b.createModule(.{
-        .root_source_file = b.path("src/components/lib.zig"),
+        .root_source_file = b.path("src/components/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    components.addImport("engine", engine);
+    components.addImport("tetrahedron", tetrahedron);
     components.addImport("service", service);
 
     // This declares intent for the library to be installed into the standard
@@ -57,7 +57,7 @@ pub fn build(b: *std.Build) void {
     exe.linkSystemLibrary("SDL3_ttf");
     exe.linkSystemLibrary("curl");
     exe.linkSystemLibrary("xml2");
-    exe.root_module.addImport("engine", engine);
+    exe.root_module.addImport("tetrahedron", tetrahedron);
     exe.root_module.addImport("components", components);
     exe.root_module.addImport("service", service);
 

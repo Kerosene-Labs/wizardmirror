@@ -1,5 +1,5 @@
 const std = @import("std");
-const engine = @import("lib.zig");
+const tetrahedron = @import("root.zig");
 
 const log = std.log.scoped(.engine_layout);
 
