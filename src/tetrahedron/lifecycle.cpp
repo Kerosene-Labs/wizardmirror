@@ -2,7 +2,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include "errors.h"
 
-void run() {
+void run(std::string name) {
      if(!SDL_Init(SDL_INIT_VIDEO)) {
         throw new SDLException(SDL_GetError());
     }
@@ -11,7 +11,7 @@ void run() {
         throw new SDLException(SDL_GetError());
     }
 
-    SDL_Window* sdl_window = SDL_CreateWindow("Test", 600, 800, SDL_WINDOW_RESIZABLE);
+    SDL_Window* sdl_window = SDL_CreateWindow(name.c_str(), 600, 800, SDL_WINDOW_RESIZABLE);
     if (sdl_window == NULL) {
         throw new SDLException(SDL_GetError());
     }
