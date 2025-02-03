@@ -1,3 +1,0 @@
-/home/hunter/Programming/wizardmirror/build/CMakeFiles/app.dir
-/home/hunter/Programming/wizardmirror/build/CMakeFiles/edit_cache.dir
-/home/hunter/Programming/wizardmirror/build/CMakeFiles/rebuild_cache.dir
