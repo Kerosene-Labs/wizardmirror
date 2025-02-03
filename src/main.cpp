@@ -4,10 +4,11 @@
 #include "tetrahedron/errors.hpp"
 #include "tetrahedron/component.hpp"
 #include "components/headlines.hpp"
+#include <memory> 
+#include <vector>
 
 int main() {
-    NewsHeadline news_headline;
-    register_component(news_headline);
+    register_component(std::make_unique<NewsHeadline>());
 
     try {
         run("WizardMirror");

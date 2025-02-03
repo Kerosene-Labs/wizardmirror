@@ -1,15 +1,15 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 #include <vector>
+#include <memory>
 
 class Component {
 public:
-    virtual void render();
     virtual ~Component() = default;
+    virtual void render() = 0;
 };
 
-extern std::vector<Component> components;
-
-void register_component(Component&);
+void register_component(std::unique_ptr<Component>);
+std::vector<std::unique_ptr<Component>>* get_components();
 
 #endif

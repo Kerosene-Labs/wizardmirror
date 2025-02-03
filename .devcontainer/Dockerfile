@@ -36,26 +36,12 @@ RUN make -j$(nproc)
 RUN make install
 
 ###
-### Zig
-###
-FROM mcr.microsoft.com/devcontainers/base:noble AS zig-install
-ARG ZIG_VERSION=zig-linux-x86_64-0.13.0
-
-RUN mkdir /tmp/zig
-WORKDIR /tmp/zig
-RUN wget https://ziglang.org/download/0.13.0/${ZIG_VERSION}.tar.xz
-RUN tar -xvf ${ZIG_VERSION}.tar.xz
-RUN mkdir /opt/zig
-RUN mv ${ZIG_VERSION}/* /opt/zig
-
-###
 ### Devcontainer
 ###
 FROM mcr.microsoft.com/devcontainers/base:noble
-RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev fonts-open-sans libfreetype-dev libfreetype6 \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y libxml2 libxml2-dev fonts-open-sans libfreetype-dev libfreetype6 gcc g++ \
     libharfbuzz0b
 COPY --from=sdl-build /usr /usr
-COPY --from=zig-install /opt/zig /opt/zig
 COPY fonts/ /usr/share/fonts/
 RUN ln -s /opt/zig/zig /usr/bin/zig && ln -s /opt/zig/lib /usr/lib
 RUN ln -s /usr/include/libxml2/libxml /usr/include/libxml

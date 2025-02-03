@@ -3,6 +3,8 @@
 #include "tetrahedron/errors.hpp"
 #include "tetrahedron/component.hpp"
 
+SDL_Renderer* renderer;
+
 void run(std::string name) {
      if(!SDL_Init(SDL_INIT_VIDEO)) {
         throw new SDLException(SDL_GetError());
@@ -17,7 +19,7 @@ void run(std::string name) {
         throw new SDLException(SDL_GetError());
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(sdl_window, NULL);
+    renderer = SDL_CreateRenderer(sdl_window, NULL);
     if (sdl_window == NULL) {
         throw new SDLException(SDL_GetError());
     }
@@ -37,6 +39,10 @@ void run(std::string name) {
 
         if (!SDL_RenderClear(renderer)) {
            throw new SDLException(SDL_GetError());
+        }
+        
+        for (const auto& component : *get_components()) {
+            component->render();
         }
         
         if (!SDL_RenderPresent(renderer)){

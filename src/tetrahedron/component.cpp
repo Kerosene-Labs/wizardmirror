@@ -1,11 +1,14 @@
 #include <vector>
+#include <memory>
 #include <SDL3/SDL.h>
 #include "tetrahedron/component.hpp"
 
-std::vector<Component> components;
+std::vector<std::unique_ptr<Component>> components;
 
-void Component::render() {}
+void register_component(std::unique_ptr<Component> component) {
+    components.push_back(std::move(component));
+}
 
-void register_component(Component& component) {
-    components.push_back(component);
+std::vector<std::unique_ptr<Component>>* get_components() {
+    return &components;
 }
