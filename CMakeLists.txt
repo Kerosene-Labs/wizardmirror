@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -O2")
 
 # Add source files
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+
+include_directories(include)
 
 # Create the executable
 add_executable(wizardmirror ${SOURCES})
@@ -13,7 +15,6 @@ add_executable(wizardmirror ${SOURCES})
 message(STATUS "Sources found: ${SOURCES}")
 
 # Include header files
-include_directories(include)
 target_include_directories(wizardmirror PRIVATE include)
 find_package(SDL3 REQUIRED)
 find_package(SDL3_ttf REQUIRED)

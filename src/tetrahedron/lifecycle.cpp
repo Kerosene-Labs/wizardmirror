@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "errors.h"
+#include "tetrahedron/errors.h"
+#include "tetrahedron/component.h"
 
 void run(std::string name) {
      if(!SDL_Init(SDL_INIT_VIDEO)) {
@@ -21,11 +22,12 @@ void run(std::string name) {
         throw new SDLException(SDL_GetError());
     }
 
+    bool running = true;
     SDL_Event event;
-    while (true) {
+    while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT ) {
-                throw new SDLException(SDL_GetError());
+                running = false;
             }
         }
 
@@ -37,9 +39,9 @@ void run(std::string name) {
            throw new SDLException(SDL_GetError());
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_FRect rect = {0.0f, 0.0f, 100, 100};
-        SDL_RenderFillRect(renderer, &rect);
+        for (const auto& component : components) {
+            
+        }
         if (!SDL_RenderPresent(renderer)){
             throw new SDLException(SDL_GetError());       
         }
