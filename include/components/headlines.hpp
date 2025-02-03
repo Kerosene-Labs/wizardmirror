@@ -1,11 +1,11 @@
 #ifndef HEADLINES_H
 #define HEADLINES_H
 
-#include "tetrahedron/component.h"
+#include "tetrahedron/component.hpp"
 
 class NewsHeadline : public Component {
 public:
-    void render() override;  // Virtual function declaration
+    void render() override;
 };
 
 #endif

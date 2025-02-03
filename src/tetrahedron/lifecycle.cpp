@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "tetrahedron/errors.h"
-#include "tetrahedron/component.h"
+#include "tetrahedron/errors.hpp"
+#include "tetrahedron/component.hpp"
 
 void run(std::string name) {
      if(!SDL_Init(SDL_INIT_VIDEO)) {
@@ -38,10 +38,7 @@ void run(std::string name) {
         if (!SDL_RenderClear(renderer)) {
            throw new SDLException(SDL_GetError());
         }
-
-        for (const auto& component : components) {
-            
-        }
+        
         if (!SDL_RenderPresent(renderer)){
             throw new SDLException(SDL_GetError());       
         }

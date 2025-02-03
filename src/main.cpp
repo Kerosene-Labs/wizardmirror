@@ -1,9 +1,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "tetrahedron/lifecycle.h"
-#include "tetrahedron/errors.h"
-#include "tetrahedron/component.h"
-#include "components/headlines.h"
+#include "tetrahedron/lifecycle.hpp"
+#include "tetrahedron/errors.hpp"
+#include "tetrahedron/component.hpp"
+#include "components/headlines.hpp"
 
 int main() {
     NewsHeadline news_headline;
